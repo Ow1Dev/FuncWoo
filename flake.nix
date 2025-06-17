@@ -27,6 +27,10 @@
             buildInputs = with pkgs; [
               go_1_24
               just
+              protobuf
+              protoc-gen-go
+              protoc-gen-go-grpc
+              grpcurl
             ];
           };
         };
