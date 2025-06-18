@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/Ow1Dev/Zynra/pkgs/api/gateway";
+option go_package = "github.com/Ow1Dev/funcwoo/pkgs/api/server";
 
 service ServerService {
   rpc Execute(ExecuteRequest) returns (ExecuteResponse);

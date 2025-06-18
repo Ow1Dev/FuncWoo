@@ -1,0 +1,18 @@
+
+syntax = "proto3";
+
+option go_package = "github.com/Ow1Dev/funcwoo/pkgs/api/communication";
+
+service CommunicationService {
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+}
+
+message ExecuteRequest {
+  string action = 1;
+  string body = 2;
+}
+
+message ExecuteResponse {
+  string status = 1;
+  string resp = 2;
+}

@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.30.2
-// source: server.proto
+// source: server/server.proto
 
-package gateway
+package server
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -30,7 +30,7 @@ type ExecuteRequest struct {
 
 func (x *ExecuteRequest) Reset() {
 	*x = ExecuteRequest{}
-	mi := &file_server_proto_msgTypes[0]
+	mi := &file_server_server_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +42,7 @@ func (x *ExecuteRequest) String() string {
 func (*ExecuteRequest) ProtoMessage() {}
 
 func (x *ExecuteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_msgTypes[0]
+	mi := &file_server_server_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +55,7 @@ func (x *ExecuteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteRequest.ProtoReflect.Descriptor instead.
 func (*ExecuteRequest) Descriptor() ([]byte, []int) {
-	return file_server_proto_rawDescGZIP(), []int{0}
+	return file_server_server_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ExecuteRequest) GetBody() string {
@@ -74,7 +74,7 @@ type ExecuteResponse struct {
 
 func (x *ExecuteResponse) Reset() {
 	*x = ExecuteResponse{}
-	mi := &file_server_proto_msgTypes[1]
+	mi := &file_server_server_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -86,7 +86,7 @@ func (x *ExecuteResponse) String() string {
 func (*ExecuteResponse) ProtoMessage() {}
 
 func (x *ExecuteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_server_proto_msgTypes[1]
+	mi := &file_server_server_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -99,7 +99,7 @@ func (x *ExecuteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteResponse.ProtoReflect.Descriptor instead.
 func (*ExecuteResponse) Descriptor() ([]byte, []int) {
-	return file_server_proto_rawDescGZIP(), []int{1}
+	return file_server_server_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ExecuteResponse) GetMessage() string {
@@ -109,36 +109,36 @@ func (x *ExecuteResponse) GetMessage() string {
 	return ""
 }
 
-var File_server_proto protoreflect.FileDescriptor
+var File_server_server_proto protoreflect.FileDescriptor
 
-const file_server_proto_rawDesc = "" +
+const file_server_server_proto_rawDesc = "" +
 	"\n" +
-	"\fserver.proto\"$\n" +
+	"\x13server/server.proto\"$\n" +
 	"\x0eExecuteRequest\x12\x12\n" +
 	"\x04body\x18\x01 \x01(\tR\x04body\"+\n" +
 	"\x0fExecuteResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage2=\n" +
 	"\rServerService\x12,\n" +
-	"\aExecute\x12\x0f.ExecuteRequest\x1a\x10.ExecuteResponseB*Z(github.com/Ow1Dev/Zynra/pkgs/api/gatewayb\x06proto3"
+	"\aExecute\x12\x0f.ExecuteRequest\x1a\x10.ExecuteResponseB+Z)github.com/Ow1Dev/funcwoo/pkgs/api/serverb\x06proto3"
 
 var (
-	file_server_proto_rawDescOnce sync.Once
-	file_server_proto_rawDescData []byte
+	file_server_server_proto_rawDescOnce sync.Once
+	file_server_server_proto_rawDescData []byte
 )
 
-func file_server_proto_rawDescGZIP() []byte {
-	file_server_proto_rawDescOnce.Do(func() {
-		file_server_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_server_proto_rawDesc), len(file_server_proto_rawDesc)))
+func file_server_server_proto_rawDescGZIP() []byte {
+	file_server_server_proto_rawDescOnce.Do(func() {
+		file_server_server_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_server_server_proto_rawDesc), len(file_server_server_proto_rawDesc)))
 	})
-	return file_server_proto_rawDescData
+	return file_server_server_proto_rawDescData
 }
 
-var file_server_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_server_proto_goTypes = []any{
+var file_server_server_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_server_server_proto_goTypes = []any{
 	(*ExecuteRequest)(nil),  // 0: ExecuteRequest
 	(*ExecuteResponse)(nil), // 1: ExecuteResponse
 }
-var file_server_proto_depIdxs = []int32{
+var file_server_server_proto_depIdxs = []int32{
 	0, // 0: ServerService.Execute:input_type -> ExecuteRequest
 	1, // 1: ServerService.Execute:output_type -> ExecuteResponse
 	1, // [1:2] is the sub-list for method output_type
@@ -148,26 +148,26 @@ var file_server_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_server_proto_init() }
-func file_server_proto_init() {
-	if File_server_proto != nil {
+func init() { file_server_server_proto_init() }
+func file_server_server_proto_init() {
+	if File_server_server_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_server_proto_rawDesc), len(file_server_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_server_server_proto_rawDesc), len(file_server_server_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_server_proto_goTypes,
-		DependencyIndexes: file_server_proto_depIdxs,
-		MessageInfos:      file_server_proto_msgTypes,
+		GoTypes:           file_server_server_proto_goTypes,
+		DependencyIndexes: file_server_server_proto_depIdxs,
+		MessageInfos:      file_server_server_proto_msgTypes,
 	}.Build()
-	File_server_proto = out.File
-	file_server_proto_goTypes = nil
-	file_server_proto_depIdxs = nil
+	File_server_server_proto = out.File
+	file_server_server_proto_goTypes = nil
+	file_server_server_proto_depIdxs = nil
 }
