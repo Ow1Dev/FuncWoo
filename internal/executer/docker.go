@@ -16,7 +16,7 @@ type DockerContainer struct {
 
 func (d *DockerContainer) exist(key string, ctx context.Context) bool {
 	fmt.Println("checking if Docker container exists for key:", key)
-		_, err := d.cli.ContainerInspect(ctx, key)
+	_, err := d.cli.ContainerInspect(ctx, key)
 	return err == nil
 }
 
