@@ -8,16 +8,16 @@ import (
 	"os"
 	"reflect"
 
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api"
+	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
 	"google.golang.org/grpc"
 )
 
 type serviceServer struct {
-	pb.UnimplementedServerServiceServer
+	pb.UnimplementedFunctionRunnerServiceServer
 	handler any
 }
 
-func (s *serviceServer) Execute(ctx context.Context, req *pb.ExecuteRequest) (*pb.ExecuteResponse, error) {
+func (s *serviceServer) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeResult, error) {
     handlerValue := reflect.ValueOf(s.handler)
     handlerType := handlerValue.Type()
 
@@ -52,7 +52,7 @@ func (s *serviceServer) Execute(ctx context.Context, req *pb.ExecuteRequest) (*p
         }
 
         // Unmarshal JSON into inputValue (which is a pointer)
-        err := json.Unmarshal([]byte(req.GetBody()), inputValue.Interface())
+        err := json.Unmarshal([]byte(req.GetPayload()), inputValue.Interface())
         if err != nil {
             return nil, fmt.Errorf("failed to unmarshal request body: %w", err)
         }
@@ -84,7 +84,7 @@ func (s *serviceServer) Execute(ctx context.Context, req *pb.ExecuteRequest) (*p
         if err != nil {
             return nil, fmt.Errorf("failed to marshal response: %w", err)
         }
-        return &pb.ExecuteResponse{Message: string(respJSON)}, nil
+        return &pb.InvokeResult{Output: string(respJSON)}, nil
 
     } else if len(results) == 1 {
         // Only error returned
@@ -93,7 +93,7 @@ func (s *serviceServer) Execute(ctx context.Context, req *pb.ExecuteRequest) (*p
             return nil, errInterface.(error)
         }
         // no response
-        return &pb.ExecuteResponse{Message: "{}"}, nil
+        return &pb.InvokeResult{Output: "{}"}, nil
 
     } else {
         return nil, fmt.Errorf("handler returned unexpected number of values: %d", len(results))
@@ -107,7 +107,7 @@ func Start(handler any) {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterServerServiceServer(s, &serviceServer{
+	pb.RegisterFunctionRunnerServiceServer(s, &serviceServer{
 		handler: handler,
 	})
 

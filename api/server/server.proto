@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "github.com/Ow1Dev/funcwoo/pkgs/api/server";
+
+service FunctionRunnerService {
+  rpc Invoke(InvokeRequest) returns (InvokeResult);
+}
+
+message InvokeRequest {
+  string payload = 1;
+}
+
+message InvokeResult {
+  string output = 1;
+}

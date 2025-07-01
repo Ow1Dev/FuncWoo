@@ -2,7 +2,8 @@
 set -euo pipefail
 
 mkdir temp
-go build -o temp/echo ./examples/echo/main.go
+
+CGO_ENABLED=0 GOOS=linux go build -o temp/echo ./examples/echo/main.go 
 
 shasum=$(sha256sum temp/echo | awk '{print $1}')
 
