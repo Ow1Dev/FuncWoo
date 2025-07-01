@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 )
 
 type DockerContainer struct {
@@ -27,9 +29,28 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 	fmt.Println("creating Docker container...")
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
 		Image: "alpine",
-		Cmd:   []string{"echo", "Hello from Docker SDK"},
-	}, nil, nil, nil, "")
-
+		Cmd:   []string{"/func/echo"},
+		ExposedPorts: nat.PortSet{
+			"8080/tcp": struct{}{},
+		},
+	}, &container.HostConfig{
+		PortBindings: nat.PortMap{
+			"8080/tcp": []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",     // or "127.0.0.1"
+					HostPort: "8080",
+				},
+			},
+		},
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: "/var/lib/funcwoo/funcs/20e763a8e50b6b799c3fd419ad270403f1b184563c5533320b69da29972c6ca8",
+				Target: "/func/",
+				ReadOnly: true,
+			},
+		},
+	}, nil, nil, "")
 	if err != nil {
 		return err
 	}
