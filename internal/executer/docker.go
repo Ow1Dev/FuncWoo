@@ -3,11 +3,16 @@ package executer
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
 )
 
 type DockerContainer struct {
@@ -15,18 +20,40 @@ type DockerContainer struct {
 }
 
 func (d *DockerContainer) execute(key string, body string, ctx context.Context) (string, error) {
+	conn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to gRPC server: %w", err)
+	}
+
+	defer conn.Close()
+
+	client := pb.NewFunctionRunnerServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	fmt.Println("executing command in Docker container for key:", key)
+	fmt.Println("Request body:", body)
+	r, err := client.Invoke(ctx, &pb.InvokeRequest{
+		Payload: body,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to execute command in Docker container: %w", err)
+	}
+
 	// Implement the logic to execute the command in the Docker container
-	return "sailor execute", nil
+	return r.Output, nil
 }
 
 func (d *DockerContainer) exist(key string, ctx context.Context) bool {
-	// Implement the logic to check if the Docker container exists
-	return false
+	fmt.Println("checking if Docker container exists for key:", key)
+		_, err := d.cli.ContainerInspect(ctx, key)
+	return err == nil
 }
 
 func (d *DockerContainer) start(key string, ctx context.Context) error {
 	// TODO: Use own docker client to create and start a container
-	fmt.Println("creating Docker container...")
+	fmt.Println("starting Docker container for key:", key)
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
 		Image: "alpine",
 		Cmd:   []string{"/func/echo"},
@@ -45,12 +72,12 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: "/var/lib/funcwoo/funcs/20e763a8e50b6b799c3fd419ad270403f1b184563c5533320b69da29972c6ca8",
+				Source: "/var/lib/funcwoo/funcs/" + key,
 				Target: "/func/",
 				ReadOnly: true,
 			},
 		},
-	}, nil, nil, "")
+	}, nil, nil, key)
 	if err != nil {
 		return err
 	}

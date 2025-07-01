@@ -20,7 +20,7 @@ type serviceServer struct {
 func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.ExecuteResponse, error) {
 	key := "example"
 
-	rsp, err := s.Executer.Execeute(key, "echo Hello from Docker SDK", ctx)
+	rsp, err := s.Executer.Execeute(key, r.GetBody(), ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error executing command: %s\n", err)
 		return &pb.ExecuteResponse{

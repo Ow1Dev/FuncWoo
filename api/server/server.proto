@@ -2,14 +2,14 @@ syntax = "proto3";
 
 option go_package = "github.com/Ow1Dev/funcwoo/pkgs/api/server";
 
-service ServerService {
-  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+service FunctionRunnerService {
+  rpc Invoke(InvokeRequest) returns (InvokeResult);
 }
 
-message ExecuteRequest {
-  string body = 1;
+message InvokeRequest {
+  string payload = 1;
 }
 
-message ExecuteResponse {
-  string message = 1;
+message InvokeResult {
+  string output = 1;
 }

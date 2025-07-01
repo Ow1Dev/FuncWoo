@@ -21,27 +21,27 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ExecuteRequest struct {
+type InvokeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Body          string                 `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
+	Payload       string                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExecuteRequest) Reset() {
-	*x = ExecuteRequest{}
+func (x *InvokeRequest) Reset() {
+	*x = InvokeRequest{}
 	mi := &file_server_server_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExecuteRequest) String() string {
+func (x *InvokeRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExecuteRequest) ProtoMessage() {}
+func (*InvokeRequest) ProtoMessage() {}
 
-func (x *ExecuteRequest) ProtoReflect() protoreflect.Message {
+func (x *InvokeRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_server_server_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -53,39 +53,39 @@ func (x *ExecuteRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExecuteRequest.ProtoReflect.Descriptor instead.
-func (*ExecuteRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use InvokeRequest.ProtoReflect.Descriptor instead.
+func (*InvokeRequest) Descriptor() ([]byte, []int) {
 	return file_server_server_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ExecuteRequest) GetBody() string {
+func (x *InvokeRequest) GetPayload() string {
 	if x != nil {
-		return x.Body
+		return x.Payload
 	}
 	return ""
 }
 
-type ExecuteResponse struct {
+type InvokeResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Output        string                 `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExecuteResponse) Reset() {
-	*x = ExecuteResponse{}
+func (x *InvokeResult) Reset() {
+	*x = InvokeResult{}
 	mi := &file_server_server_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExecuteResponse) String() string {
+func (x *InvokeResult) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExecuteResponse) ProtoMessage() {}
+func (*InvokeResult) ProtoMessage() {}
 
-func (x *ExecuteResponse) ProtoReflect() protoreflect.Message {
+func (x *InvokeResult) ProtoReflect() protoreflect.Message {
 	mi := &file_server_server_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -97,14 +97,14 @@ func (x *ExecuteResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExecuteResponse.ProtoReflect.Descriptor instead.
-func (*ExecuteResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use InvokeResult.ProtoReflect.Descriptor instead.
+func (*InvokeResult) Descriptor() ([]byte, []int) {
 	return file_server_server_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ExecuteResponse) GetMessage() string {
+func (x *InvokeResult) GetOutput() string {
 	if x != nil {
-		return x.Message
+		return x.Output
 	}
 	return ""
 }
@@ -113,13 +113,13 @@ var File_server_server_proto protoreflect.FileDescriptor
 
 const file_server_server_proto_rawDesc = "" +
 	"\n" +
-	"\x13server/server.proto\"$\n" +
-	"\x0eExecuteRequest\x12\x12\n" +
-	"\x04body\x18\x01 \x01(\tR\x04body\"+\n" +
-	"\x0fExecuteResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2=\n" +
-	"\rServerService\x12,\n" +
-	"\aExecute\x12\x0f.ExecuteRequest\x1a\x10.ExecuteResponseB+Z)github.com/Ow1Dev/funcwoo/pkgs/api/serverb\x06proto3"
+	"\x13server/server.proto\")\n" +
+	"\rInvokeRequest\x12\x18\n" +
+	"\apayload\x18\x01 \x01(\tR\apayload\"&\n" +
+	"\fInvokeResult\x12\x16\n" +
+	"\x06output\x18\x01 \x01(\tR\x06output2@\n" +
+	"\x15FunctionRunnerService\x12'\n" +
+	"\x06Invoke\x12\x0e.InvokeRequest\x1a\r.InvokeResultB+Z)github.com/Ow1Dev/funcwoo/pkgs/api/serverb\x06proto3"
 
 var (
 	file_server_server_proto_rawDescOnce sync.Once
@@ -135,12 +135,12 @@ func file_server_server_proto_rawDescGZIP() []byte {
 
 var file_server_server_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_server_server_proto_goTypes = []any{
-	(*ExecuteRequest)(nil),  // 0: ExecuteRequest
-	(*ExecuteResponse)(nil), // 1: ExecuteResponse
+	(*InvokeRequest)(nil), // 0: InvokeRequest
+	(*InvokeResult)(nil),  // 1: InvokeResult
 }
 var file_server_server_proto_depIdxs = []int32{
-	0, // 0: ServerService.Execute:input_type -> ExecuteRequest
-	1, // 1: ServerService.Execute:output_type -> ExecuteResponse
+	0, // 0: FunctionRunnerService.Invoke:input_type -> InvokeRequest
+	1, // 1: FunctionRunnerService.Invoke:output_type -> InvokeResult
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
