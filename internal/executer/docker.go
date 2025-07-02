@@ -24,9 +24,10 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 	// TODO: Use own docker client to create and start a container
 	fmt.Println("starting Docker container for key:", key)
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
-		Image: "alpine",
+		Image: "funcwoo/base",
 		Cmd:   []string{"/func/echo"},
 		ExposedPorts: nat.PortSet{
+			// TODO: use a dynamic port
 			"8080/tcp": struct{}{},
 		},
 	}, &container.HostConfig{
@@ -34,6 +35,7 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 			"8080/tcp": []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",     // or "127.0.0.1"
+				  // TODO: use a dynamic port
 					HostPort: "8080",
 				},
 			},
