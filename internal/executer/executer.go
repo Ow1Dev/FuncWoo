@@ -1,14 +1,18 @@
 package executer
 
 import (
+	"bufio"
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 
-	"time"
 	"fmt"
+	"time"
 
+	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
 )
 
 type Container interface {
@@ -27,9 +31,11 @@ func NewExecuter(container Container) *Executer {
 }
 
 func(e *Executer) Execeute(action string, body string, ctx context.Context) (string, error) {
-	// override key with a fixed value for testing purposes
-	// TODO: get key from from action
-	key := "7c7677eec81f1b60dc19db9dbe06113c2af58b020cca5aca6106366f38fe11ae"
+	key, err := getKeyFromAction(action)
+	if err != nil {
+		return "", fmt.Errorf("failed to get key from action: %w", err)
+	}
+
 	if !e.container.exist(key, ctx) {
 		err := e.container.start(key, ctx)
 		if err != nil {
@@ -45,6 +51,23 @@ func(e *Executer) Execeute(action string, body string, ctx context.Context) (str
 	return rsp, nil
 }
 
+func getKeyFromAction(action string) (string, error) {
+	path := filepath.Join("/var/lib/funcwoo/action", action)
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to open action file: %w", err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading action file: %w", err)
+	}
+	return "", fmt.Errorf("action file %s is empty", path)
+}
 
 func handleRequest(key string, body string, ctx context.Context) (string, error) {
 	//TODO: get url from Container implementation
