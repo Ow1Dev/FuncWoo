@@ -2,6 +2,14 @@
 default:
     @just --list
 
+# Run both Go services concurrently
+run:
+    set -euo pipefail; \
+    trap 'echo "Shutting down..."; kill 0' SIGINT SIGTERM; \
+    go run ./cmd/prism/main.go 2>&1 | sed "s/^/[PRISM] /" & \
+    go run ./cmd/igniterelay/main.go 2>&1 | sed "s/^/[IGNITERELAY] /" & \
+    wait
+
 update:
     nix flake update
     go get -u ./...

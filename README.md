@@ -24,7 +24,17 @@ Sigil is a Go package for defining and authoring functions with a simple interfa
 
 ## Getting Started
 
+
 ### 1. Set Up Project Files
+
+### Prerequisites
+
+Ensure you have the following installed:
+- Go (version 1.18 or later)
+- Just (a command runner for Go projects)
+- Protobuf compiler (protoc)
+- gRPC plugin for Go
+- docker
 
 Initialize the required folders and files:
 
@@ -44,13 +54,22 @@ Compile the function and generate the necessary runtime files:
 
 ## Running Locally
 
-### Start Ignite
+### Run Both
+To run both Ignite and Prism, you can use the provided `just` commands:
+
+```bash
+just run
+```
+
+### Starting Ignite and Prism Separately
+
+#### Start Ignite
 
 ```bash
 go run ./cmd/igniterelay/main.go
 ```
 
-### Start Prism
+#### Start Prism
 
 ```bash
 go run ./cmd/prism/main.go
