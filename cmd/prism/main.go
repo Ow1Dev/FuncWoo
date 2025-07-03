@@ -68,7 +68,7 @@ func newServer() http.Handler {
 		log.Printf("Parsed action: %+v\n", cfg)
 
 		// send the action to the executer
-		sendAction, err := SendAction(cfg.Action, string("{\"Name\":\"Ow1\"}"), r.Context())
+		sendAction, err := sendAction(cfg.Action, string("{\"Name\":\"Ow1\"}"), r.Context())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error sending action: %s", err), http.StatusInternalServerError)
 			return
@@ -82,7 +82,7 @@ func newServer() http.Handler {
 }
 
 
-func SendAction(action string, body string, ctx context.Context) (string, error) {
+func sendAction(action string, body string, ctx context.Context) (string, error) {
 	//TODO: get url from Container implementation
 	conn, err := grpc.NewClient("localhost:5001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -102,6 +102,10 @@ func SendAction(action string, body string, ctx context.Context) (string, error)
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to execute command in Docker container: %w", err)
+	}
+
+	if r.Status != "success" {
+		return "", fmt.Errorf("There was a error executing the command")
 	}
 
 	// Implement the logic to execute the command in the Docker container
