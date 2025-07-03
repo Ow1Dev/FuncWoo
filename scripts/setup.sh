@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "Creating /var/lib/funcwoo/funcs directory with proper permissions..."
-sudo mkdir -pv /var/lib/funcwoo/funcs
+sudo mkdir -pv /var/lib/funcwoo/{funcs,routes}
 sudo chown -R "$(id -u):$(id -g)" /var/lib/funcwoo
 
 echo "Building funcwoo/base:latest Docker image..."
