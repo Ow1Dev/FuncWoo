@@ -14,6 +14,7 @@ echo "Checksum: $shasum"
 
 funcs_dir="/var/lib/funcwoo/funcs/${shasum}"
 action_dir="/var/lib/funcwoo/action"
+routes_dir="/var/lib/funcwoo/routes"
 
 echo "Creating target directory"
 mkdir -p "$funcs_dir"
@@ -27,6 +28,9 @@ rm -rf "$temp_dir"
 echo "Setting up action reference"
 mkdir -p "$action_dir"
 echo "$shasum" > "$action_dir/echo"
+
+echo "Setting up route conifg"
+cp ./configs/routes/echo.yml "$routes_dir/echo.yml"
 
 echo "Build complete"
 
