@@ -25,6 +25,15 @@ func newServer() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.Path
 
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Failed to read body", http.StatusBadRequest)
+        return
+    }
+    defer r.Body.Close()
+
+		
+
 		// if the URL is just "/", return a message
 		if url == "/" {
 			http.Error(w, "No action specified", http.StatusBadRequest)
@@ -68,7 +77,7 @@ func newServer() http.Handler {
 		log.Printf("Parsed action: %+v\n", cfg)
 
 		// send the action to the executer
-		sendAction, err := sendAction(cfg.Action, string("{\"Name\":\"Ow1\"}"), r.Context())
+		sendAction, err := sendAction(cfg.Action, string(body), r.Context())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error sending action: %s", err), http.StatusInternalServerError)
 			return
