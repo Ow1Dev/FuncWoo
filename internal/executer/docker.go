@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/rs/zerolog/log"
 )
 
 type DockerContainer struct {
@@ -15,14 +16,14 @@ type DockerContainer struct {
 }
 
 func (d *DockerContainer) exist(key string, ctx context.Context) bool {
-	fmt.Println("checking if Docker container exists for key:", key)
+	log.Info().Msgf("Checking if Docker container exists for key: %s", key)
 	_, err := d.cli.ContainerInspect(ctx, key)
 	return err == nil
 }
 
 func (d *DockerContainer) start(key string, ctx context.Context) error {
 	// TODO: Use own docker client to create and start a container
-	fmt.Println("starting Docker container for key:", key)
+	log.Info().Msgf("Starting Docker container for key: %s", key)
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
 		Image: "funcwoo/base",
 		Cmd:   []string{"/func/echo"},
@@ -53,7 +54,7 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("Docker container created with ID:", resp.ID)
+	log.Info().Msgf("Docker container created with ID: %s", resp.ID)
 	if err := d.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
