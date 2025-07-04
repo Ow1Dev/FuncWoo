@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 
@@ -32,7 +33,11 @@ func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.
 	}, nil
 }
 
-func main() {
+func run(ctx context.Context, w io.Writer, args []string) error {
+	_ = ctx 
+	_ = args
+	_ = w
+
 	dockerRunner, err := executer.NewDockerContainer()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
@@ -54,5 +59,15 @@ func main() {
 	fmt.Printf("Gateway server listening on %s\n", lis.Addr().String())
 	if err := s.Serve(lis); err != nil {
 		fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+	}
+
+	return nil
+}
+
+func main() {
+	ctx := context.Background()
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
 	}
 }
