@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Ow1Dev/FuncWoo/internal/logger"
 	"github.com/Ow1Dev/FuncWoo/internal/routes"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/yaml.v3"
@@ -44,7 +47,7 @@ func newServer() http.Handler {
 		action := r.URL.Path[1:]
 		action = strings.ReplaceAll(action, "/", ".") 
 
-		fmt.Printf("Received action: %s\n", action)
+		log.Debug().Msgf("Received action: %s", action)
 
 		// find file that matches the action
 		filePath := fmt.Sprintf("/var/lib/funcwoo/routes/%s.yml", action)
@@ -66,7 +69,8 @@ func newServer() http.Handler {
 		cfg := routes.RouteConfig{}
 		yerr := yaml.Unmarshal([]byte(data), &cfg)
 		if yerr != nil {
-						log.Fatalf("error: %v", err)
+			http.Error(w, fmt.Sprintf("Error parsing action file: %s", yerr), http.StatusInternalServerError)
+			return
 		}
 
 		if cfg.Method != r.Method {
@@ -122,9 +126,15 @@ func sendAction(action string, body string, ctx context.Context) (string, error)
 }
 
 func run(ctx context.Context, w io.Writer, args []string) error {
-	_ = ctx 
 	_ = args
-	_ = w
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	debug := flag.Bool("debug", false, "sets log level to debug")
+	flag.Parse()
+
+	logger.InitLog(w, *debug)
 
 	srv := newServer()
 	httpServer := &http.Server{

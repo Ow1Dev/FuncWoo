@@ -2,12 +2,19 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"os/signal"
+	"sync"
+	"time"
 
 	"github.com/Ow1Dev/FuncWoo/internal/executer"
+	"github.com/Ow1Dev/FuncWoo/internal/logger"
 	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/communication"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -32,7 +39,17 @@ func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.
 	}, nil
 }
 
-func main() {
+func run(ctx context.Context, w io.Writer, args []string) error {
+	_ = args
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	debug := flag.Bool("debug", false, "sets log level to debug")
+	flag.Parse()
+
+	logger.InitLog(w, *debug)
+
 	dockerRunner, err := executer.NewDockerContainer()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
@@ -41,18 +58,41 @@ func main() {
 
 	executer := executer.NewExecuter(dockerRunner)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 5001))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
-	}
-
 	s := grpc.NewServer()
 	pb.RegisterCommunicationServiceServer(s, &serviceServer{
 		Executer: *executer,
 	})
 
-	fmt.Printf("Gateway server listening on %s\n", lis.Addr().String())
-	if err := s.Serve(lis); err != nil {
-		fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+	go func() {
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 5001))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+		}
+
+		log.Info().Msgf("Gateway server listening on %s", lis.Addr().String())
+		if err := s.Serve(lis); err != nil {
+			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		shutdownCtx := context.Background()
+		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10 * time.Second)
+		defer cancel()
+		s.Stop()
+	}()
+	wg.Wait()
+	return nil
+}
+
+func main() {
+	ctx := context.Background()
+	if err := run(ctx, os.Stdout, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
 	}
 }

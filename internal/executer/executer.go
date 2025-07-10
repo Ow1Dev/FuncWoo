@@ -11,6 +11,7 @@ import (
 	"time"
 
 	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -83,8 +84,8 @@ func handleRequest(key string, body string, ctx context.Context) (string, error)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	fmt.Println("executing command in Docker container for key:", key)
-	fmt.Println("Request body:", body)
+	log.Debug().Msgf("Executing command in Docker container for key: %s", key)
+	log.Debug().Msgf("Request body: %s", body)
 	r, err := client.Invoke(ctx, &pb.InvokeRequest{
 		Payload: body,
 	})
