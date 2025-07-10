@@ -40,13 +40,14 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 	if err != nil {
 		return "", fmt.Errorf("failed to get key from action: %w", err)
 	}
-	
+
+	var port int
 	if !e.container.exist(key, ctx) {
 		listener, err := net.Listen("tcp", ":0")
 		if err != nil {
 			return "", fmt.Errorf("failed to create listener: %w", err)
 		}
-		port := listener.Addr().(*net.TCPAddr).Port
+		port = listener.Addr().(*net.TCPAddr).Port
 		listener.Close() // Close the listener since we only needed the port
 		
 		log.Debug().Msgf("Starting container on port: %d", port)
@@ -59,14 +60,17 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 		if err := e.container.waitForContainer(key, ctx); err != nil {
 			return "", fmt.Errorf("container failed to start properly: %w", err)
 		}
+	} else {
+		log.Debug().Msgf("Container already exists, getting port for key: %s", key)
+		port = e.container.getPort(key, ctx)
 	}
 	
-	port := e.container.getPort(key, ctx)
 	if port == 0 {
 		return "", fmt.Errorf("failed to get port for container: %s", key)
 	}
 	
-	log.Debug().Msgf("Making request to localhost:%d", port)
+	// TODO: get url from configuration or environment variable
+	log.Info().Msgf("Making request to localhost:%d", port)
 	rsp, err := handleRequest("localhost:"+strconv.Itoa(port), body, ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to handle request: %w", err)
@@ -106,7 +110,6 @@ func handleRequest(url string, body string, ctx context.Context) (string, error)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	log.Debug().Msgf("Request URL: %s", url)
 	log.Debug().Msgf("Request body: %s", body)
 	r, err := client.Invoke(ctx, &pb.InvokeRequest{
 		Payload: body,

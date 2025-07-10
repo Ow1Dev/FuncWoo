@@ -22,7 +22,7 @@ func (d *DockerContainer) waitForContainer(key string, ctx context.Context) erro
 	log.Info().Msgf("Waiting for container to be ready: %s", key)
 	
 	// Wait for container to be in running state
-	for i := 0; i < 30; i++ { // Wait up to 30 seconds
+	for range 30 {
 		containerJSON, err := d.cli.ContainerInspect(ctx, key)
 		if err != nil {
 			return fmt.Errorf("failed to inspect container: %w", err)
