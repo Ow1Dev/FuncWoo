@@ -26,7 +26,7 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 	log.Info().Msgf("Starting Docker container for key: %s", key)
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
 		Image: "funcwoo/base",
-		Cmd:   []string{"/func/echo"},
+		Cmd:   []string{"/func/main"},
 		ExposedPorts: nat.PortSet{
 			// TODO: use a dynamic port
 			"8080/tcp": struct{}{},

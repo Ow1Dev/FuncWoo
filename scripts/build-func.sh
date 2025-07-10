@@ -7,7 +7,7 @@ build-func() {
   echo "Using temporary directory: $temp_dir"
 
   echo "Building Go binary (CGO_ENABLED=0, GOOS=linux)..."
-  CGO_ENABLED=0 GOOS=linux go build -o "$temp_dir/$2" $1/main.go 
+  CGO_ENABLED=0 GOOS=linux go build -o "$temp_dir/main" $1/main.go 
 
   echo "Computing single SHA256 for folder contents..."
   shasum=$(find "$temp_dir" -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}')
@@ -38,3 +38,4 @@ build-func() {
 }
 
 build-func "./examples/echo" "echo"
+build-func "./examples/hello" "hello"

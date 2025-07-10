@@ -142,7 +142,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		Handler: srv,
 	}
 	go func() {
-		log.Printf("listening on %s\n", httpServer.Addr)
+		log.Info().Msgf("prim server listening on 5000")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 		}

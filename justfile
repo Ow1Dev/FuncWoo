@@ -6,8 +6,8 @@ default:
 run:
     set -euo pipefail; \
     trap 'echo "Shutting down..."; kill 0' SIGINT SIGTERM; \
-    go run ./cmd/prism/main.go 2>&1 | sed "s/^/[PRISM] /" & \
-    go run ./cmd/igniterelay/main.go 2>&1 | sed "s/^/[IGNITERELAY] /" & \
+    go run ./cmd/prism/main.go --debug 2>&1 | sed "s/^/[PRISM] /" & \
+    go run ./cmd/igniterelay/main.go --debug 2>&1 | sed "s/^/[IGNITERELAY] /" & \
     wait
 
 update:
