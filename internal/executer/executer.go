@@ -3,8 +3,10 @@ package executer
 import (
 	"bufio"
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"fmt"
@@ -17,8 +19,10 @@ import (
 )
 
 type Container interface {
+	getPort (key string, ctx context.Context) int
+	waitForContainer (key string, ctx context.Context) error
 	exist (key string, ctx context.Context) bool
-	start (key string, ctx context.Context) error
+	start (key string, port int, ctx context.Context) error
 }
 
 type Executer struct {
@@ -31,27 +35,49 @@ func NewExecuter(container Container) *Executer {
 	}
 }
 
-func(e *Executer) Execeute(action string, body string, ctx context.Context) (string, error) {
+func (e *Executer) Execute(action string, body string, ctx context.Context) (string, error) {
 	key, err := getKeyFromAction(action)
 	if err != nil {
 		return "", fmt.Errorf("failed to get key from action: %w", err)
 	}
 
+	var port int
 	if !e.container.exist(key, ctx) {
-		err := e.container.start(key, ctx)
+		listener, err := net.Listen("tcp", ":0")
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to create listener: %w", err)
 		}
+		port = listener.Addr().(*net.TCPAddr).Port
+		listener.Close() // Close the listener since we only needed the port
+		
+		log.Debug().Msgf("Starting container on port: %d", port)
+		err = e.container.start(key, port, ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to start container: %w", err)
+		}
+		
+		// Wait for container to be ready
+		if err := e.container.waitForContainer(key, ctx); err != nil {
+			return "", fmt.Errorf("container failed to start properly: %w", err)
+		}
+	} else {
+		log.Debug().Msgf("Container already exists, getting port for key: %s", key)
+		port = e.container.getPort(key, ctx)
 	}
-
-	rsp, err := handleRequest(key, body, ctx)
+	
+	if port == 0 {
+		return "", fmt.Errorf("failed to get port for container: %s", key)
+	}
+	
+	// TODO: get url from configuration or environment variable
+	log.Info().Msgf("Making request to localhost:%d", port)
+	rsp, err := handleRequest("localhost:"+strconv.Itoa(port), body, ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to handle request: %w", err)
 	}
-
+	
 	return rsp, nil
 }
-
 func getKeyFromAction(action string) (string, error) {
 	path := filepath.Join("/var/lib/funcwoo/action", action)
 	f, err := os.Open(path)
@@ -70,9 +96,9 @@ func getKeyFromAction(action string) (string, error) {
 	return "", fmt.Errorf("action file %s is empty", path)
 }
 
-func handleRequest(key string, body string, ctx context.Context) (string, error) {
+func handleRequest(url string, body string, ctx context.Context) (string, error) {
 	//TODO: get url from Container implementation
-	conn, err := grpc.NewClient("localhost:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to gRPC server: %w", err)
 	}
@@ -84,7 +110,6 @@ func handleRequest(key string, body string, ctx context.Context) (string, error)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	log.Debug().Msgf("Executing command in Docker container for key: %s", key)
 	log.Debug().Msgf("Request body: %s", body)
 	r, err := client.Invoke(ctx, &pb.InvokeRequest{
 		Payload: body,
