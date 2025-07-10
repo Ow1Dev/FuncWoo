@@ -25,7 +25,7 @@ type serviceServer struct {
 
 // Execute implements gateway.ServerServiceServer.
 func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.ExecuteResponse, error) {
-	rsp, err := s.Executer.Execeute(r.GetAction(), r.GetBody(), ctx)
+	rsp, err := s.Executer.Execute(r.GetAction(), r.GetBody(), ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error executing command: %s\n", err)
 		return &pb.ExecuteResponse{
