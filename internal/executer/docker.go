@@ -146,7 +146,6 @@ func (d *DockerContainer) getOrCreateContainer(key string, ctx context.Context) 
 		return "", err
 	}
 	
-	// Remove this unnecessary check - if we get here, containerID has a value
 	return containerID, nil
 }
 
