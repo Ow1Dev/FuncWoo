@@ -40,7 +40,7 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 	}
 
 	var port int
-	if e.container.isRunning(key, ctx) == false {
+	if !e.container.isRunning(key, ctx) {
 		log.Info().Msgf("Container is not running, starting new container with key: %s", key)
 		err = e.container.start(key, ctx)
 		if err != nil {
