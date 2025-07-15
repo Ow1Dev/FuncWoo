@@ -3,7 +3,6 @@ package executer
 import (
 	"bufio"
 	"context"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -20,9 +19,8 @@ import (
 
 type Container interface {
 	getPort (key string, ctx context.Context) int
-	waitForContainer (key string, ctx context.Context) error
-	exist (key string, ctx context.Context) bool
-	start (key string, port int, ctx context.Context) error
+	isRunning (key string, ctx context.Context) bool
+	start (key string, ctx context.Context) error
 }
 
 type Executer struct {
@@ -42,28 +40,16 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 	}
 
 	var port int
-	if !e.container.exist(key, ctx) {
-		listener, err := net.Listen("tcp", ":0")
-		if err != nil {
-			return "", fmt.Errorf("failed to create listener: %w", err)
-		}
-		port = listener.Addr().(*net.TCPAddr).Port
-		listener.Close() // Close the listener since we only needed the port
-		
-		log.Debug().Msgf("Starting container on port: %d", port)
-		err = e.container.start(key, port, ctx)
+	if e.container.isRunning(key, ctx) == false {
+		log.Info().Msgf("Container is not running, starting new container with key: %s", key)
+		err = e.container.start(key, ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to start container: %w", err)
 		}
-		
-		// Wait for container to be ready
-		if err := e.container.waitForContainer(key, ctx); err != nil {
-			return "", fmt.Errorf("container failed to start properly: %w", err)
-		}
-	} else {
-		log.Debug().Msgf("Container already exists, getting port for key: %s", key)
-		port = e.container.getPort(key, ctx)
-	}
+	} 
+
+	log.Debug().Msgf("Container already exists, getting port for key: %s", key)
+	port = e.container.getPort(key, ctx)
 	
 	if port == 0 {
 		return "", fmt.Errorf("failed to get port for container: %s", key)
