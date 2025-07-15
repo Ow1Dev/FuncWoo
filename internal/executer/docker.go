@@ -12,6 +12,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog/log"
+
+	cerrdefs "github.com/containerd/errdefs"
 )
 
 type DockerContainer struct {
@@ -75,16 +77,89 @@ func (d *DockerContainer) getPort(key string, ctx context.Context) int {
 	return 0
 }
 
-func (d *DockerContainer) exist(key string, ctx context.Context) bool {
+func (d *DockerContainer) isRunning(key string, ctx context.Context) bool {
 	log.Info().Msgf("Checking if Docker container exists for key: %s", key)
-	_, err := d.cli.ContainerInspect(ctx, key)
-	return err == nil
+	v, err := d.cli.ContainerInspect(ctx, key)
+	if err != nil {
+		return false
+	}
+
+	return v.State.Running
 }
 
-func (d *DockerContainer) start(key string, port int, ctx context.Context) error {
-	internalPort := nat.Port("8080/tcp")
-	log.Info().Msgf("Starting Docker container for key: %s", key)
+func (d *DockerContainer) start(key string, ctx context.Context) error {
+	containerId, err := d.getOrCreateContainer(key, ctx)
+	if err != nil {
+		return fmt.Errorf("Failed to get or create container") 
+	}
+
+	log.Info().Msgf("Starting Docker container with ID: %s for key: %s", containerId, key)
+	if err := d.cli.ContainerStart(ctx, containerId, container.StartOptions{}); err != nil {
+		log.Error().Err(err).Msgf("Failed to start container %s", containerId)
+		return fmt.Errorf("failed to start container: %w", err)
+	}
 	
+	log.Info().Msgf("Docker container started successfully for key: %s", key)
+
+	// Wait for the container to be ready
+	if err := d.waitForContainer(key, ctx); err != nil {
+		return fmt.Errorf("container failed to start properly: %w", err)
+	}
+
+	return nil
+}
+
+func getRandomPort() (*int, error) {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create listener: %w", err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close() // Close the listener since we only needed the port
+
+	return &port, nil
+}
+
+func (d *DockerContainer) getIdByKey(key string, ctx context.Context) (string, error) {
+	log.Info().Msgf("Getting Docker container ID for key: %s", key)
+	containerJSON, err := d.cli.ContainerInspect(ctx, key)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			log.Debug().Msgf("Container %s not found", key)
+			return "", err 
+		}
+		log.Error().Err(err).Msgf("Failed to inspect container: %s", key)
+		return "", fmt.Errorf("failed to inspect container: %w", err)
+	}
+	log.Debug().Msgf("Container ID for key %s is %s", key, containerJSON.ID)
+	return containerJSON.ID, nil
+}
+
+func (d *DockerContainer) getOrCreateContainer(key string, ctx context.Context) (string, error) {
+	// First try to get existing container
+	containerID, err := d.getIdByKey(key, ctx)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			log.Info().Msgf("Container %s not found, creating new one", key)
+			return d.create(key, ctx)
+		}
+		return "", err
+	}
+	
+	return containerID, nil
+}
+
+func (d *DockerContainer) create(key string, ctx context.Context) (string, error) {
+	log.Info().Msgf("Creating Docker container for key: %s", key)
+
+	port, err := getRandomPort()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get random port")
+		return "", fmt.Errorf("failed to get random port: %w", err)
+	}
+
+	internalPort := nat.Port("8080/tcp")
+
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
 		Image: "funcwoo/base",
 		Cmd:   []string{"/func/main"},
@@ -96,7 +171,7 @@ func (d *DockerContainer) start(key string, port int, ctx context.Context) error
 			internalPort: []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: strconv.Itoa(port),
+					HostPort: strconv.Itoa(*port),
 				},
 			},
 		},
@@ -112,18 +187,12 @@ func (d *DockerContainer) start(key string, port int, ctx context.Context) error
 	
 	if err != nil {
 		log.Error().Err(err).Msgf("Failed to create container for key: %s", key)
-		return fmt.Errorf("failed to create container: %w", err)
+		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 	
 	log.Info().Msgf("Docker container created with ID: %s", resp.ID)
-	
-	if err := d.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		log.Error().Err(err).Msgf("Failed to start container %s", resp.ID)
-		return fmt.Errorf("failed to start container: %w", err)
-	}
-	
-	log.Info().Msgf("Docker container started successfully for key: %s", key)
-	return nil
+
+	return resp.ID, nil
 }
 
 func NewDockerContainer() (*DockerContainer, error) {
