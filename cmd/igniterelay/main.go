@@ -50,7 +50,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	logger.InitLog(w, *debug)
 
-	dockerRunner, err := executer.NewDockerContainer()
+	dockerRunner, err := executer.NewDockerContainerWithDefaults()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
 		os.Exit(1)

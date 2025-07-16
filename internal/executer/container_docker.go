@@ -9,22 +9,131 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog/log"
 
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	cerrdefs "github.com/containerd/errdefs"
 )
 
+type DockerClientInterface interface {
+	ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error)
+	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+	networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
+}
+
+type NetworkInterface interface {
+	Listen(network, address string) (net.Listener, error)
+	DialTimeout(network, address string, timeout time.Duration) (net.Conn, error)
+}
+
+type RealNetwork struct{}
+
+func (r *RealNetwork) Listen(network, address string) (net.Listener, error) {
+	return net.Listen(network, address)
+}
+
+func (r *RealNetwork) DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
+	return net.DialTimeout(network, address, timeout)
+}
+
+type TimeProvider interface {
+	Sleep(duration time.Duration)
+	Now() time.Time
+}
+
+type RealTimeProvider struct{}
+
+func (r *RealTimeProvider) Sleep(duration time.Duration) {
+	time.Sleep(duration)
+}
+
+func (r *RealTimeProvider) Now() time.Time {
+	return time.Now()
+}
+
 type DockerContainer struct {
+	cli DockerClientInterface
+	network NetworkInterface 
+	timeProvider TimeProvider
+	config DockerConfig 
+}
+
+type DockerConfig struct {
+	Image                string
+	InternalPort         string
+	MountSourcePrefix    string
+	MountTarget          string
+	ContainerReadyTimeout time.Duration
+	ConnectionTimeout     time.Duration
+	RetryInterval         time.Duration
+}
+
+func DefaultDockerConfig() DockerConfig {
+	return DockerConfig{
+		Image:                "noctifunc/base",
+		InternalPort:         "8080/tcp",
+		MountSourcePrefix:    "/var/lib/noctifunc/funcs/",
+		MountTarget:          "/func/",
+		ContainerReadyTimeout: 30 * time.Second,
+		ConnectionTimeout:     time.Second,
+		RetryInterval:         time.Second,
+	}
+}
+
+func NewDockerContainer(cli DockerClientInterface, network NetworkInterface, timeProvider TimeProvider, config DockerConfig) *DockerContainer {
+	return &DockerContainer{
+		cli:          cli,
+		network:      network,
+		timeProvider: timeProvider,
+		config:       config,
+	}
+}
+
+func NewDockerContainerWithDefaults() (*DockerContainer, error) {
+	cli, err := client.NewClientWithOpts(
+		client.WithHost("unix:///var/run/docker.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+	}
+
+	return NewDockerContainer(
+		&DockerClientAdapter{cli: cli},
+		&RealNetwork{},
+		&RealTimeProvider{},
+		DefaultDockerConfig(),
+	), nil
+}
+
+func (d *DockerClientAdapter) ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error) {
+	return d.cli.ContainerInspect(ctx, containerID)
+}
+
+func (d *DockerClientAdapter) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error {
+	return d.cli.ContainerStart(ctx, containerID, options)
+}
+
+func (d *DockerClientAdapter) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+	networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+	return d.cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, platform, containerName)
+}
+
+type DockerClientAdapter struct {
 	cli *client.Client
 }
 
 func (d *DockerContainer) waitForContainer(key string, ctx context.Context) error {
 	log.Info().Msgf("Waiting for container to be ready: %s", key)
+
+	timeout := d.timeProvider.Now().Add(d.config.ContainerReadyTimeout)
 	
 	// Wait for container to be in running state
-	for range 30 {
+	for d.timeProvider.Now().Before(timeout) {
 		containerJSON, err := d.cli.ContainerInspect(ctx, key)
 		if err != nil {
 			return fmt.Errorf("failed to inspect container: %w", err)
@@ -36,7 +145,7 @@ func (d *DockerContainer) waitForContainer(key string, ctx context.Context) erro
 			// Additional check: try to connect to the port
 			port := d.getPort(key, ctx)
 			if port > 0 {
-				conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), time.Second)
+				conn, err := d.network.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), d.config.ConnectionTimeout)
 				if err == nil {
 					conn.Close()
 					log.Info().Msgf("Container %s is ready and accepting connections", key)
@@ -45,12 +154,11 @@ func (d *DockerContainer) waitForContainer(key string, ctx context.Context) erro
 			}
 		}
 		
-		time.Sleep(time.Second)
+		d.timeProvider.Sleep(d.config.RetryInterval)
 	}
 	
 	return fmt.Errorf("container %s did not become ready within timeout", key)
 }
-
 
 func (d *DockerContainer) getPort(key string, ctx context.Context) int {
 	log.Info().Msgf("Getting port for Docker container with key: %s", key)
@@ -109,15 +217,15 @@ func (d *DockerContainer) start(key string, ctx context.Context) error {
 	return nil
 }
 
-func getRandomPort() (*int, error) {
-	listener, err := net.Listen("tcp", ":0")
+func (d *DockerContainer) getRandomPort() (int, error) {
+	listener, err := d.network.Listen("tcp", ":0")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create listener: %w", err)
+		return 0, fmt.Errorf("failed to create listener: %w", err)
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
 	listener.Close() // Close the listener since we only needed the port
 
-	return &port, nil
+	return port, nil
 }
 
 func (d *DockerContainer) getIdByKey(key string, ctx context.Context) (string, error) {
@@ -152,16 +260,16 @@ func (d *DockerContainer) getOrCreateContainer(key string, ctx context.Context) 
 func (d *DockerContainer) create(key string, ctx context.Context) (string, error) {
 	log.Info().Msgf("Creating Docker container for key: %s", key)
 
-	port, err := getRandomPort()
+	port, err := d.getRandomPort()
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get random port")
 		return "", fmt.Errorf("failed to get random port: %w", err)
 	}
 
-	internalPort := nat.Port("8080/tcp")
+	internalPort := nat.Port(d.config.InternalPort)
 
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
-		Image: "noctifunc/base",
+		Image: d.config.Image,
 		Cmd:   []string{"/func/main"},
 		ExposedPorts: nat.PortSet{
 			internalPort: struct{}{},
@@ -171,15 +279,15 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 			internalPort: []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: strconv.Itoa(*port),
+					HostPort: strconv.Itoa(port),
 				},
 			},
 		},
 		Mounts: []mount.Mount{
 			{
 				Type:     mount.TypeBind,
-				Source:   "/var/lib/noctifunc/funcs/" + key,
-				Target:   "/func/",
+				Source:   d.config.MountSourcePrefix + key,
+				Target:   d.config.MountTarget,
 				ReadOnly: true,
 			},
 		},
@@ -193,21 +301,4 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 	log.Info().Msgf("Docker container created with ID: %s", resp.ID)
 
 	return resp.ID, nil
-}
-
-func NewDockerContainer() (*DockerContainer, error) {
-	// TODO: Use own docker client to create and start a container
-	// TODO: Use environment variables or configuration files to set the Docker host
-	cli, err := client.NewClientWithOpts(
-		client.WithHost("unix:///var/run/docker.sock"),
-		client.WithAPIVersionNegotiation(),
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %w", err)
-	}
-
-	return &DockerContainer{
-		cli: cli,
-	}, nil
 }
