@@ -10,6 +10,9 @@ run:
     go run ./cmd/igniterelay/main.go --debug 2>&1 | sed "s/^/[IGNITERELAY] /" & \
     wait
 
+test:
+    go test -v ./...
+
 update:
     nix flake update
     go get -u ./...
