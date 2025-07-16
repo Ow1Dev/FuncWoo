@@ -151,7 +151,7 @@ func (d *DockerContainer) WaitForContainer(key string, ctx context.Context) erro
 			d.logger.Info().Msgf("Container %s is running", key)
 			
 			// Additional check: try to connect to the port
-			port := d.getPort(key, ctx)
+			port := d.GetPort(key, ctx)
 			if port > 0 {
 				conn, err := d.network.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), d.config.ConnectionTimeout)
 				if err == nil {
@@ -218,7 +218,7 @@ func (d *DockerContainer) Start(key string, ctx context.Context) error {
 	d.logger.Info().Msgf("Docker container started successfully for key: %s", key)
 
 	// Wait for the container to be ready
-	if err := d.waitForContainer(key, ctx); err != nil {
+	if err := d.WaitForContainer(key, ctx); err != nil {
 		return fmt.Errorf("container failed to start properly: %w", err)
 	}
 

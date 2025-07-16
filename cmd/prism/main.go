@@ -73,6 +73,12 @@ func newServer() http.Handler {
 			return
 		}
 
+		err = cfg.Validate()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error validating action config: %s", err), http.StatusInternalServerError)
+			return
+		}
+
 		if cfg.Method != r.Method {
 			http.Error(w, fmt.Sprintf("Method %s not allowed for action %s", r.Method, action), http.StatusMethodNotAllowed)
 			return
