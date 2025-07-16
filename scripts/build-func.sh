@@ -13,9 +13,9 @@ build-func() {
   shasum=$(find "$temp_dir" -type f -print0 | sort -z | xargs -0 cat | sha256sum | awk '{print $1}')
   echo "Checksum: $shasum"
 
-  funcs_dir="/var/lib/funcwoo/funcs/${shasum}"
-  action_dir="/var/lib/funcwoo/action"
-  routes_dir="/var/lib/funcwoo/routes"
+  funcs_dir="/var/lib/noctifunc/funcs/${shasum}"
+  action_dir="/var/lib/noctifunc/action"
+  routes_dir="/var/lib/noctifunc/routes"
 
   echo "Creating target directory"
   mkdir -p "$funcs_dir"

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Ow1Dev/FuncWoo/internal/executer"
-	"github.com/Ow1Dev/FuncWoo/internal/logger"
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/communication"
+	"github.com/Ow1Dev/NoctiFunc/internal/executer"
+	"github.com/Ow1Dev/NoctiFunc/internal/logger"
+	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )

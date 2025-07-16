@@ -119,7 +119,7 @@ const file_server_server_proto_rawDesc = "" +
 	"\fInvokeResult\x12\x16\n" +
 	"\x06output\x18\x01 \x01(\tR\x06output2@\n" +
 	"\x15FunctionRunnerService\x12'\n" +
-	"\x06Invoke\x12\x0e.InvokeRequest\x1a\r.InvokeResultB+Z)github.com/Ow1Dev/funcwoo/pkgs/api/serverb\x06proto3"
+	"\x06Invoke\x12\x0e.InvokeRequest\x1a\r.InvokeResultB+Z)github.com/Ow1Dev/noctifunc/pkgs/api/serverb\x06proto3"
 
 var (
 	file_server_server_proto_rawDescOnce sync.Once

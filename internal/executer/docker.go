@@ -161,7 +161,7 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 	internalPort := nat.Port("8080/tcp")
 
 	resp, err := d.cli.ContainerCreate(ctx, &container.Config{
-		Image: "funcwoo/base",
+		Image: "noctifunc/base",
 		Cmd:   []string{"/func/main"},
 		ExposedPorts: nat.PortSet{
 			internalPort: struct{}{},
@@ -178,7 +178,7 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 		Mounts: []mount.Mount{
 			{
 				Type:     mount.TypeBind,
-				Source:   "/var/lib/funcwoo/funcs/" + key,
+				Source:   "/var/lib/noctifunc/funcs/" + key,
 				Target:   "/func/",
 				ReadOnly: true,
 			},

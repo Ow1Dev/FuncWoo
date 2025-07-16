@@ -1,6 +1,6 @@
-# FuncWoo
+# NoctiFunc
 
-FuncWoo is a lightweight function framework for building scalable, distributed functions. It is designed to be developer-friendly, allowing you to focus on writing your function logic without worrying about infrastructure details.
+NoctiFunc is a lightweight function framework for building scalable, distributed functions. It is designed to be developer-friendly, allowing you to focus on writing your function logic without worrying about infrastructure details.
 
 ---
 
@@ -16,7 +16,7 @@ Prism exposes your functions as RESTful APIs. It routes HTTP requests to the app
 
 ### Sigil — Function Definition Toolkit
 
-Sigil is a Go package for defining and authoring functions with a simple interface, integrated seamlessly with the FuncWoo runtime.
+Sigil is a Go package for defining and authoring functions with a simple interface, integrated seamlessly with the NoctiFunc runtime.
 
 > See the ['examples/'](./examples) directory for sample functions.
 

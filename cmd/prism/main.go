@@ -13,14 +13,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Ow1Dev/FuncWoo/internal/logger"
-	"github.com/Ow1Dev/FuncWoo/internal/routes"
+	"github.com/Ow1Dev/NoctiFunc/internal/logger"
+	"github.com/Ow1Dev/NoctiFunc/internal/routes"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/yaml.v3"
 
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/communication"
+	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
 )
 
 func newServer() http.Handler {
@@ -50,7 +50,7 @@ func newServer() http.Handler {
 		log.Debug().Msgf("Received action: %s", action)
 
 		// find file that matches the action
-		filePath := fmt.Sprintf("/var/lib/funcwoo/routes/%s.yml", action)
+		filePath := fmt.Sprintf("/var/lib/noctifunc/routes/%s.yml", action)
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			http.Error(w, fmt.Sprintf("Action %s not found", action), http.StatusNotFound)
 			return

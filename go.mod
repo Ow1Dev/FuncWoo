@@ -1,4 +1,4 @@
-module github.com/Ow1Dev/FuncWoo
+module github.com/Ow1Dev/NoctiFunc
 
 go 1.24.3
 

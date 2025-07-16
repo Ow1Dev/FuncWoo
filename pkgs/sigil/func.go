@@ -8,7 +8,7 @@ import (
 	"os"
 	"reflect"
 
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
+	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/server"
 	"google.golang.org/grpc"
 )
 
