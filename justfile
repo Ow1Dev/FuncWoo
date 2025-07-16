@@ -12,7 +12,7 @@ run:
 
 # Run tests excluding any package matching '/pkgs/api'
 test:
-   go test -v $(go list ./... | grep -v '/pkgs/api')
+   go test $(go list ./... | grep -v -E '(/pkgs/api|/examples)')
 
 # Update nix flakes and Go modules
 update:
