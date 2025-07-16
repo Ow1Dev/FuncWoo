@@ -1,4 +1,4 @@
-package executer
+package container
 
 import (
 	"context"
@@ -150,7 +150,7 @@ func TestDockerContainer_isRunning_True(t *testing.T) {
 	}
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
-	result := dockerContainer.isRunning("test-key", context.Background())
+	result := dockerContainer.IsRunning("test-key", context.Background())
 
 	if !result {
 		t.Error("Expected container to be running")
@@ -166,7 +166,7 @@ func TestDockerContainer_isRunning_False(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
-	result := dockerContainer.isRunning("test-key", context.Background())
+	result := dockerContainer.IsRunning("test-key", context.Background())
 
 	if result {
 		t.Error("Expected container to not be running")
@@ -192,7 +192,7 @@ func TestDockerContainer_getPort_Success(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
-	port := dockerContainer.getPort("test-key", context.Background())
+	port := dockerContainer.GetPort("test-key", context.Background())
 
 	if port != 9090 {
 		t.Errorf("Expected port 9090, got %d", port)
@@ -213,7 +213,7 @@ func TestDockerContainer_getPort_NoMapping(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
-	port := dockerContainer.getPort("test-key", context.Background())
+	port := dockerContainer.GetPort("test-key", context.Background())
 
 	if port != 0 {
 		t.Errorf("Expected port 0, got %d", port)
@@ -274,7 +274,7 @@ func TestDockerContainer_start_Success(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
-	err := dockerContainer.start("test-key", context.Background())
+	err := dockerContainer.Start("test-key", context.Background())
 
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
@@ -300,7 +300,7 @@ func TestDockerContainer_start_StartError(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
-	err := dockerContainer.start("test-key", context.Background())
+	err := dockerContainer.Start("test-key", context.Background())
 
 	if err == nil {
 		t.Error("Expected error, got nil")
@@ -347,7 +347,7 @@ func TestDockerContainer_waitForContainer_Success(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
-	err := dockerContainer.waitForContainer("test-key", context.Background())
+	err := dockerContainer.WaitForContainer("test-key", context.Background())
 
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
@@ -377,7 +377,7 @@ func TestDockerContainer_waitForContainer_Timeout(t *testing.T) {
 
 	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, mockTime, config, zerolog.Nop())
 
-	err := dockerContainer.waitForContainer("test-key", context.Background())
+	err := dockerContainer.WaitForContainer("test-key", context.Background())
 
 	if err == nil {
 		t.Error("Expected timeout error, got nil")

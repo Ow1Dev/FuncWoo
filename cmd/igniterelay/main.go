@@ -11,7 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Ow1Dev/NoctiFunc/internal/container"
 	"github.com/Ow1Dev/NoctiFunc/internal/executer"
+	"github.com/Ow1Dev/NoctiFunc/internal/funcinvoker"
+	"github.com/Ow1Dev/NoctiFunc/internal/keyservice"
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
 	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
 	"github.com/rs/zerolog/log"
@@ -50,14 +53,14 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	logger := logger.InitLog(w, *debug)
 
-	dockerRunner, err := executer.NewDockerContainerWithDefaults(logger)
+	dockerRunner, err := container.NewDockerContainerWithDefaults(logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
 		os.Exit(1)
 	}
 
-	grpcFuncExecuter := executer.NewStandardGRPCClient(10 * time.Second)
-	fileKeyService := executer.NewFileSystemKeyService()
+	grpcFuncExecuter := funcinvoker.NewStandardGRPCClient(10 * time.Second)
+	fileKeyService := keyservice.NewFileSystemKeyService()
 
 	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
 

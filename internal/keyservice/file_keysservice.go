@@ -1,4 +1,4 @@
-package executer
+package keyservice
 
 import (
 	"bufio"
@@ -14,7 +14,7 @@ func NewFileSystemKeyService() *FileSystemKeyService {
 	return &FileSystemKeyService{}
 }
 
-func (f *FileSystemKeyService) getKeyFromAction(action string) (string, error) {
+func (f *FileSystemKeyService) GetKeyFromAction(action string) (string, error) {
 	path := filepath.Join("/var/lib/noctifunc/action", action)
 	file, err := os.Open(path)
 	if err != nil {

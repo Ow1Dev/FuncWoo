@@ -1,4 +1,4 @@
-package executer
+package funcinvoker
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package executer
+package container
 
 import (
 	"context"
@@ -135,7 +135,7 @@ type DockerClientAdapter struct {
 	cli *client.Client
 }
 
-func (d *DockerContainer) waitForContainer(key string, ctx context.Context) error {
+func (d *DockerContainer) WaitForContainer(key string, ctx context.Context) error {
 	d.logger.Info().Msgf("Waiting for container to be ready: %s", key)
 
 	timeout := d.timeProvider.Now().Add(d.config.ContainerReadyTimeout)
@@ -168,7 +168,7 @@ func (d *DockerContainer) waitForContainer(key string, ctx context.Context) erro
 	return fmt.Errorf("container %s did not become ready within timeout", key)
 }
 
-func (d *DockerContainer) getPort(key string, ctx context.Context) int {
+func (d *DockerContainer) GetPort (key string, ctx context.Context) int {
 	d.logger.Info().Msgf("Getting port for Docker container with key: %s", key)
 	
 	containerJSON, err := d.cli.ContainerInspect(ctx, key)
@@ -193,7 +193,7 @@ func (d *DockerContainer) getPort(key string, ctx context.Context) int {
 	return 0
 }
 
-func (d *DockerContainer) isRunning(key string, ctx context.Context) bool {
+func (d *DockerContainer) IsRunning(key string, ctx context.Context) bool {
 	d.logger.Info().Msgf("Checking if Docker container exists for key: %s", key)
 	v, err := d.cli.ContainerInspect(ctx, key)
 	if err != nil {
@@ -203,7 +203,7 @@ func (d *DockerContainer) isRunning(key string, ctx context.Context) bool {
 	return v.State.Running
 }
 
-func (d *DockerContainer) start(key string, ctx context.Context) error {
+func (d *DockerContainer) Start(key string, ctx context.Context) error {
 	containerId, err := d.getOrCreateContainer(key, ctx)
 	if err != nil {
 		return fmt.Errorf("Failed to get or create container") 

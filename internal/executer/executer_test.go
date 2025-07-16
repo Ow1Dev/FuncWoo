@@ -9,39 +9,39 @@ import (
 )
 
 type MockContainer struct {
-	isRunningFunc func(key string, ctx context.Context) bool
-	startFunc func(key string, ctx context.Context) error
-	getPortFunc func(key string, ctx context.Context) int
+	IsRunningFunc func(key string, ctx context.Context) bool
+	StartFunc func(key string, ctx context.Context) error
+	GetPortFunc func(key string, ctx context.Context) int
 }
 
-func (m *MockContainer) isRunning(key string, ctx context.Context) bool {
-	if m.isRunningFunc != nil {
-		return m.isRunningFunc(key, ctx)
+func (m *MockContainer) IsRunning(key string, ctx context.Context) bool {
+	if m.IsRunningFunc != nil {
+		return m.IsRunningFunc(key, ctx)
 	}
 	return false
 }
 
-func (m *MockContainer) start(key string, ctx context.Context) error {
-	if m.startFunc != nil {
-		return m.startFunc(key, ctx)
+func (m *MockContainer) Start(key string, ctx context.Context) error {
+	if m.StartFunc != nil {
+		return m.StartFunc(key, ctx)
 	}
 	return nil
 } 
 
-func (m *MockContainer) getPort(key string, ctx context.Context) int {
-	if m.getPortFunc != nil {
-		return m.getPortFunc(key, ctx)
+func (m *MockContainer) GetPort(key string, ctx context.Context) int {
+	if m.GetPortFunc != nil {
+		return m.GetPortFunc(key, ctx)
 	}
 	return 8080
 }
 
 type MockKeyService struct {
-	getKeyFromActionFunc func(action string) (string, error)
+	GetKeyFromActionFunc func(action string) (string, error)
 }
 
-func (m *MockKeyService) getKeyFromAction(action string) (string, error) {
-	if m.getKeyFromActionFunc != nil {
-		return m.getKeyFromActionFunc(action)
+func (m *MockKeyService) GetKeyFromAction(action string) (string, error) {
+	if m.GetKeyFromActionFunc != nil {
+		return m.GetKeyFromActionFunc(action)
 	}
 	return "test-key", nil
 }
@@ -61,16 +61,16 @@ func (m *MockGRPCFuncExecuter) Invoke(ctx context.Context, url string, payload s
 func TextExecuter_Execute_Success_ContainerRunning(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return true
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 8080
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "test-key", nil
 		},
 	}
@@ -96,19 +96,19 @@ func TextExecuter_Execute_Success_ContainerRunning(t *testing.T) {
 func TestExecuter_Execute_Success_ContainerNotRunning(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return false
 		},
-		startFunc: func(key string, ctx context.Context) error {
+		StartFunc: func(key string, ctx context.Context) error {
 			return nil
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 8080
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "test-key", nil
 		},
 	}
@@ -134,19 +134,19 @@ func TestExecuter_Execute_Success_ContainerNotRunning(t *testing.T) {
 func TestExecuter_Execute_FileReaderError(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return false
 		},
-		startFunc: func(key string, ctx context.Context) error {
+		StartFunc: func(key string, ctx context.Context) error {
 			return nil
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 8080
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "", fmt.Errorf("file read error")
 		},
 	}
@@ -164,19 +164,19 @@ func TestExecuter_Execute_FileReaderError(t *testing.T) {
 func TestExecuter_Execute_ContainerStartError(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return false
 		},
-		startFunc: func(key string, ctx context.Context) error {
+		StartFunc: func(key string, ctx context.Context) error {
 			return fmt.Errorf("container start error")
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 8080
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "test-key", nil
 		},
 	}
@@ -194,19 +194,19 @@ func TestExecuter_Execute_ContainerStartError(t *testing.T) {
 func TestExecuter_Execute_PortZeroError(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return false
 		},
-		startFunc: func(key string, ctx context.Context) error {
+		StartFunc: func(key string, ctx context.Context) error {
 			return nil
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 0 // Simulating port zero error
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "test-key", nil
 		},
 	}
@@ -224,16 +224,16 @@ func TestExecuter_Execute_PortZeroError(t *testing.T) {
 func TestExecuter_Execute_GRPCFuncExecuter(t *testing.T) {
 	ctx := context.Background()
 	mockContainer := &MockContainer{
-		isRunningFunc: func(key string, ctx context.Context) bool {
+		IsRunningFunc: func(key string, ctx context.Context) bool {
 			return true
 		},
-		getPortFunc: func(key string, ctx context.Context) int {
+		GetPortFunc: func(key string, ctx context.Context) int {
 			return 8080
 		},
 	}
 
 	mockKeyService := &MockKeyService{
-		getKeyFromActionFunc: func(action string) (string, error) {
+		GetKeyFromActionFunc: func(action string) (string, error) {
 			return "test-key", nil
 		},
 	}
