@@ -137,7 +137,7 @@ const file_communication_communication_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x12\n" +
 	"\x04resp\x18\x02 \x01(\tR\x04resp2D\n" +
 	"\x14CommunicationService\x12,\n" +
-	"\aExecute\x12\x0f.ExecuteRequest\x1a\x10.ExecuteResponseB2Z0github.com/Ow1Dev/funcwoo/pkgs/api/communicationb\x06proto3"
+	"\aExecute\x12\x0f.ExecuteRequest\x1a\x10.ExecuteResponseB4Z2github.com/Ow1Dev/noctifunc/pkgs/api/communicationb\x06proto3"
 
 var (
 	file_communication_communication_proto_rawDescOnce sync.Once

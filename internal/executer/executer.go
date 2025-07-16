@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/Ow1Dev/FuncWoo/pkgs/api/server"
+	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/server"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -65,7 +65,7 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 	return rsp, nil
 }
 func getKeyFromAction(action string) (string, error) {
-	path := filepath.Join("/var/lib/funcwoo/action", action)
+	path := filepath.Join("/var/lib/noctifunc/action", action)
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to open action file: %w", err)

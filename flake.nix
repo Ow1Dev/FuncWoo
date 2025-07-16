@@ -1,5 +1,5 @@
 {
-  description = "Configuration for FuncWoo";
+  description = "Configuration for NoctiFunc";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -18,7 +18,7 @@
         system,
         ...
       }: let
-        name = "FuncWoo";
+        name = "NoctiFunc";
         vendorHash = "sha256-int+VOY11p/Vg/ZVKf2I37AejHvH0EUZJoW+U8EFVbQ=";
       in {
         devShells = {
@@ -41,7 +41,7 @@
             src = ./.;
             subPackages = ["cmd"];
             postBuild = ''
-              mv $GOPATH/bin/cmd $GOPATH/bin/funcwoo
+              mv $GOPATH/bin/cmd $GOPATH/bin/noctifunc
             '';
           };
         };
