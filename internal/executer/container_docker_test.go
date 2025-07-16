@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+	"github.com/rs/zerolog"
 
 	cerrdefs "github.com/containerd/errdefs"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -147,7 +148,7 @@ func TestDockerContainer_isRunning_True(t *testing.T) {
 			}, nil
 		},
 	}
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	result := dockerContainer.isRunning("test-key", context.Background())
 
@@ -163,7 +164,7 @@ func TestDockerContainer_isRunning_False(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	result := dockerContainer.isRunning("test-key", context.Background())
 
@@ -189,7 +190,7 @@ func TestDockerContainer_getPort_Success(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port := dockerContainer.getPort("test-key", context.Background())
 
@@ -210,7 +211,7 @@ func TestDockerContainer_getPort_NoMapping(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port := dockerContainer.getPort("test-key", context.Background())
 
@@ -271,7 +272,7 @@ func TestDockerContainer_start_Success(t *testing.T) {
 		currentTime: time.Now(),
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.start("test-key", context.Background())
 
@@ -297,7 +298,7 @@ func TestDockerContainer_start_StartError(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.start("test-key", context.Background())
 
@@ -344,7 +345,7 @@ func TestDockerContainer_waitForContainer_Success(t *testing.T) {
 		currentTime: time.Now(),
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.waitForContainer("test-key", context.Background())
 
@@ -374,7 +375,7 @@ func TestDockerContainer_waitForContainer_Timeout(t *testing.T) {
 	config := DefaultDockerConfig()
 	config.ContainerReadyTimeout = time.Millisecond
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, mockTime, config)
+	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, mockTime, config, zerolog.Nop())
 
 	err := dockerContainer.waitForContainer("test-key", context.Background())
 
@@ -396,7 +397,7 @@ func TestDockerContainer_getRandomPort(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port, err := dockerContainer.getRandomPort()
 
@@ -415,7 +416,7 @@ func TestDockerContainer_getRandomPort_Error(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port, err := dockerContainer.getRandomPort()
 
@@ -453,7 +454,7 @@ func TestDockerContainer_create_Success(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	containerID, err := dockerContainer.create("test-key", context.Background())
 
@@ -482,7 +483,7 @@ func TestDockerContainer_create_Error(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig())
+	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	containerID, err := dockerContainer.create("test-key", context.Background())
 

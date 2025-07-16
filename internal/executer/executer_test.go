@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 type MockContainer struct {
@@ -79,7 +81,7 @@ func TextExecuter_Execute_Success_ContainerRunning(t *testing.T) {
 		},
 	}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	result, err := executer.Execute("test-action", "test-body", ctx)
 	if err != nil {
@@ -117,7 +119,7 @@ func TestExecuter_Execute_Success_ContainerNotRunning(t *testing.T) {
 		},
 	}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	response, err := executer.Execute("test-action", "test-body", ctx)
 	if err != nil {
@@ -151,7 +153,7 @@ func TestExecuter_Execute_FileReaderError(t *testing.T) {
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	response, err := executer.Execute("test-action", "test-body", ctx)
 	if err == nil || response != "" {
@@ -181,7 +183,7 @@ func TestExecuter_Execute_ContainerStartError(t *testing.T) {
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	response, err := executer.Execute("test-action", "test-body", ctx)
 	if err == nil || response != "" {
@@ -211,7 +213,7 @@ func TestExecuter_Execute_PortZeroError(t *testing.T) {
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	response, err := executer.Execute("test-action", "test-body", ctx)
 	if err == nil || response != "" {
@@ -242,7 +244,7 @@ func TestExecuter_Execute_GRPCFuncExecuter(t *testing.T) {
 		},
 	}
 
-	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter)
+	executer := NewExecuter(mockContainer, mockKeyService, mockGRPCFuncExecuter, zerolog.Nop())
 
 	response, err := executer.Execute("test-action", "test-body", ctx)
 	if err == nil || response != "" {

@@ -6,7 +6,7 @@ import (
 
 	"fmt"
 
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type GRPCFuncExecuter interface {
@@ -27,13 +27,15 @@ type Executer struct {
 	container Container
   grpcFuncExecuter GRPCFuncExecuter
   keyService KeyService
+	logger zerolog.Logger
 }
 
-func NewExecuter(container Container, keyService KeyService, grpcFuncExecuter GRPCFuncExecuter) *Executer {
+func NewExecuter(container Container, keyService KeyService, grpcFuncExecuter GRPCFuncExecuter, logger zerolog.Logger) *Executer {
 	return &Executer{
 		container: container,
 		grpcFuncExecuter: grpcFuncExecuter,
 		keyService: keyService,
+		logger: logger,
 	}
 }
 
@@ -45,14 +47,14 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 
 	var port int
 	if !e.container.isRunning(key, ctx) {
-		log.Info().Msgf("Container is not running, starting new container with key: %s", key)
+		e.logger.Info().Msgf("Container is not running, starting new container with key: %s", key)
 		err = e.container.start(key, ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to start container: %w", err)
 		}
 	} 
 
-	log.Debug().Msgf("Container already exists, getting port for key: %s", key)
+	e.logger.Debug().Msgf("Container already exists, getting port for key: %s", key)
 	port = e.container.getPort(key, ctx)
 	
 	if port == 0 {
@@ -60,7 +62,7 @@ func (e *Executer) Execute(action string, body string, ctx context.Context) (str
 	}
 	
 	// TODO: get url from configuration or environment variable
-	log.Info().Msgf("Making request to localhost:%d", port)
+	e.logger.Info().Msgf("Making request to localhost:%d", port)
 	rsp, err := e.grpcFuncExecuter.Invoke(ctx, "localhost:"+strconv.Itoa(port), body)
 	if err != nil {
 		return "", fmt.Errorf("failed to handle request: %w", err)

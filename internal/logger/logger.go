@@ -7,11 +7,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func InitLog(w io.Writer, debug bool) {
+func InitLog(w io.Writer, debug bool) zerolog.Logger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = zerolog.New(w).With().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
+
+	return log.Logger
 }

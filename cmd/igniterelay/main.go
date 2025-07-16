@@ -48,9 +48,9 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
-	logger.InitLog(w, *debug)
+	logger := logger.InitLog(w, *debug)
 
-	dockerRunner, err := executer.NewDockerContainerWithDefaults()
+	dockerRunner, err := executer.NewDockerContainerWithDefaults(logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
 		os.Exit(1)
@@ -59,7 +59,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	grpcFuncExecuter := executer.NewStandardGRPCClient(10 * time.Second)
 	fileKeyService := executer.NewFileSystemKeyService()
 
-	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter)
+	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
 
 	s := grpc.NewServer()
 	pb.RegisterCommunicationServiceServer(s, &serviceServer{
