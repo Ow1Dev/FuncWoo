@@ -56,7 +56,10 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 		os.Exit(1)
 	}
 
-	executer := executer.NewExecuter(dockerRunner)
+	grpcFuncExecuter := executer.NewStandardGRPCClient(10 * time.Second)
+	fileKeyService := executer.NewFileSystemKeyService()
+
+	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter)
 
 	s := grpc.NewServer()
 	pb.RegisterCommunicationServiceServer(s, &serviceServer{
