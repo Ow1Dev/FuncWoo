@@ -8,19 +8,21 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
+	dockernet "github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog"
 
 	cerrdefs "github.com/containerd/errdefs"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+
+	netpkg "github.com/Ow1Dev/NoctiFunc/pkgs/network"
 )
 
 type MockDockerClient struct {
 	containerInspectFunc func(ctx context.Context, containerID string) (container.InspectResponse, error)
 	containerStartFunc   func(ctx context.Context, containerID string, options container.StartOptions) error
 	containerCreateFunc  func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-		networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
+		networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
 }
 
 func (m *MockDockerClient) ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error) {
@@ -38,81 +40,11 @@ func (m *MockDockerClient) ContainerStart(ctx context.Context, containerID strin
 }
 
 func (m *MockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-	networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 	if m.containerCreateFunc != nil {
 		return m.containerCreateFunc(ctx, config, hostConfig, networkingConfig, platform, containerName)
 	}
 	return container.CreateResponse{ID: "mock-container-id"}, nil
-}
-
-type MockNetwork struct {
-	listenFunc      func(network, address string) (net.Listener, error)
-	dialTimeoutFunc func(network, address string, timeout time.Duration) (net.Conn, error)
-}
-
-func (m *MockNetwork) Listen(network, address string) (net.Listener, error) {
-	if m.listenFunc != nil {
-		return m.listenFunc(network, address)
-	}
-	// Create a mock listener that returns a fixed port
-	return &MockListener{port: 8080}, nil
-}
-
-func (m *MockNetwork) DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
-	if m.dialTimeoutFunc != nil {
-		return m.dialTimeoutFunc(network, address, timeout)
-	}
-	return &MockConn{}, nil
-}
-
-type MockListener struct {
-	port int
-}
-
-func (m *MockListener) Accept() (net.Conn, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockListener) Close() error {
-	return nil
-}
-
-func (m *MockListener) Addr() net.Addr {
-	return &net.TCPAddr{Port: m.port}
-}
-
-type MockConn struct{}
-
-func (m *MockConn) Read(b []byte) (n int, err error) {
-	return 0, nil
-}
-
-func (m *MockConn) Write(b []byte) (n int, err error) {
-	return len(b), nil
-}
-
-func (m *MockConn) Close() error {
-	return nil
-}
-
-func (m *MockConn) LocalAddr() net.Addr {
-	return &net.TCPAddr{Port: 8080}
-}
-
-func (m *MockConn) RemoteAddr() net.Addr {
-	return &net.TCPAddr{Port: 8080}
-}
-
-func (m *MockConn) SetDeadline(t time.Time) error {
-	return nil
-}
-
-func (m *MockConn) SetReadDeadline(t time.Time) error {
-	return nil
-}
-
-func (m *MockConn) SetWriteDeadline(t time.Time) error {
-	return nil
 }
 
 type MockTimeProvider struct {
@@ -148,7 +80,7 @@ func TestDockerContainer_isRunning_True(t *testing.T) {
 			}, nil
 		},
 	}
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, &netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	result := dockerContainer.IsRunning("test-key", context.Background())
 
@@ -164,7 +96,7 @@ func TestDockerContainer_isRunning_False(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, &netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	result := dockerContainer.IsRunning("test-key", context.Background())
 
@@ -190,7 +122,7 @@ func TestDockerContainer_getPort_Success(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port := dockerContainer.GetPort("test-key", context.Background())
 
@@ -211,7 +143,7 @@ func TestDockerContainer_getPort_NoMapping(t *testing.T) {
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, &netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	port := dockerContainer.GetPort("test-key", context.Background())
 
@@ -254,17 +186,23 @@ func TestDockerContainer_start_Success(t *testing.T) {
 			return nil
 		},
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-			networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
 	}
 
-	mockNetwork := &MockNetwork{
-		listenFunc: func(network, address string) (net.Listener, error) {
-			return &MockListener{port: 9090}, nil
+	mockNetwork := &netpkg.MockNetwork{
+		ListenFunc: func(network, address string) (net.Listener, error) {
+			return &netpkg.MockListener{Port: 9090}, nil
 		},
-		dialTimeoutFunc: func(network, address string, timeout time.Duration) (net.Conn, error) {
-			return &MockConn{}, nil
+		DialTimeoutFunc: func(network, address string, timeout time.Duration) (net.Conn, error) {
+			return &netpkg.MockConn{}, nil
+		},
+	}
+
+	mockPortAllocator := &netpkg.MockPortAllocator{
+		GetRandomPortFunc: func() (int, error) {
+			return 9090, nil
 		},
 	}
 
@@ -272,7 +210,7 @@ func TestDockerContainer_start_Success(t *testing.T) {
 		currentTime: time.Now(),
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.Start("test-key", context.Background())
 
@@ -293,12 +231,12 @@ func TestDockerContainer_start_StartError(t *testing.T) {
 			return errors.New("start failed")
 		},
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-			networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, &netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.Start("test-key", context.Background())
 
@@ -335,9 +273,15 @@ func TestDockerContainer_waitForContainer_Success(t *testing.T) {
 		},
 	}
 
-	mockNetwork := &MockNetwork{
-		dialTimeoutFunc: func(network, address string, timeout time.Duration) (net.Conn, error) {
-			return &MockConn{}, nil
+	mockNetwork := &netpkg.MockNetwork{
+		DialTimeoutFunc: func(network, address string, timeout time.Duration) (net.Conn, error) {
+			return &netpkg.MockConn{}, nil
+		},
+	}
+
+	mockPortAllocator := &netpkg.MockPortAllocator{
+		GetRandomPortFunc: func() (int, error) {
+			return 9090, nil
 		},
 	}
 
@@ -345,7 +289,7 @@ func TestDockerContainer_waitForContainer_Success(t *testing.T) {
 		currentTime: time.Now(),
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.WaitForContainer("test-key", context.Background())
 
@@ -375,7 +319,7 @@ func TestDockerContainer_waitForContainer_Timeout(t *testing.T) {
 	config := DefaultDockerConfig()
 	config.ContainerReadyTimeout = time.Millisecond
 
-	dockerContainer := NewDockerContainer(mockClient, &MockNetwork{}, mockTime, config, zerolog.Nop())
+	dockerContainer := NewDockerContainer(mockClient, &netpkg.MockPortAllocator{}, &netpkg.MockNetwork{}, mockTime, config, zerolog.Nop())
 
 	err := dockerContainer.WaitForContainer("test-key", context.Background())
 
@@ -390,50 +334,12 @@ func TestDockerContainer_waitForContainer_Timeout(t *testing.T) {
 	}
 }
 
-func TestDockerContainer_getRandomPort(t *testing.T) {
-	mockNetwork := &MockNetwork{
-		listenFunc: func(network, address string) (net.Listener, error) {
-			return &MockListener{port: 12345}, nil
-		},
-	}
-
-	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
-
-	port, err := dockerContainer.getRandomPort()
-
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if port != 12345 {
-		t.Errorf("Expected port 12345, got %d", port)
-	}
-}
-
-func TestDockerContainer_getRandomPort_Error(t *testing.T) {
-	mockNetwork := &MockNetwork{
-		listenFunc: func(network, address string) (net.Listener, error) {
-			return nil, errors.New("network error")
-		},
-	}
-
-	dockerContainer := NewDockerContainer(&MockDockerClient{}, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
-
-	port, err := dockerContainer.getRandomPort()
-
-	if err == nil {
-		t.Error("Expected error, got nil")
-	}
-	if port != 0 {
-		t.Errorf("Expected port 0, got %d", port)
-	}
-}
-
 func TestDockerContainer_create_Success(t *testing.T) {
 	createCalled := false
 	
 	mockClient := &MockDockerClient{
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-			networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			createCalled = true
 			
 			// Verify configuration
@@ -448,13 +354,19 @@ func TestDockerContainer_create_Success(t *testing.T) {
 		},
 	}
 
-	mockNetwork := &MockNetwork{
-		listenFunc: func(network, address string) (net.Listener, error) {
-			return &MockListener{port: 9090}, nil
+	mockNetwork := &netpkg.MockNetwork{
+		ListenFunc: func(network, address string) (net.Listener, error) {
+			return &netpkg.MockListener{Port: 9090}, nil
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	mockPortAllocator := &netpkg.MockPortAllocator{
+		GetRandomPortFunc: func() (int, error) {
+			return 9090, nil
+		},
+	}
+
+	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	containerID, err := dockerContainer.create("test-key", context.Background())
 
@@ -472,18 +384,24 @@ func TestDockerContainer_create_Success(t *testing.T) {
 func TestDockerContainer_create_Error(t *testing.T) {
 	mockClient := &MockDockerClient{
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-			networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{}, errors.New("create failed")
 		},
 	}
 
-	mockNetwork := &MockNetwork{
-		listenFunc: func(network, address string) (net.Listener, error) {
-			return &MockListener{port: 9090}, nil
+	mockNetwork := &netpkg.MockNetwork{
+		ListenFunc: func(network, address string) (net.Listener, error) {
+			return &netpkg.MockListener{Port: 9090}, nil
 		},
 	}
 
-	dockerContainer := NewDockerContainer(mockClient, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
+	mockPortAllocator := &netpkg.MockPortAllocator{
+		GetRandomPortFunc: func() (int, error) {
+			return 9090, nil
+		},
+	}
+
+	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	containerID, err := dockerContainer.create("test-key", context.Background())
 
