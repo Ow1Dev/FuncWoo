@@ -26,7 +26,6 @@ func TestPortAllocator_getRandomPort(t* testing.T) {
 	}
 }
 
-
 func TestPortAllocator_getRandomPort_error(t* testing.T) {
 	networkMock := &MockNetwork{
 		ListenFunc: func(network, address string) (net.Listener, error) {
