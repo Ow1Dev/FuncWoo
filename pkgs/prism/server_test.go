@@ -1,4 +1,4 @@
-package ignite
+package prism
 
 import (
 	"context"
@@ -152,8 +152,9 @@ func TestServer_ExtractAction(t *testing.T) {
 func TestServer_LoadRouteConfig_Success(t *testing.T) {
 	fileReader := &MockFileReader{
 		ReadFileFunc: func(filename string) ([]byte, error) {
-			return []byte(`method: POST action: test.action`), nil
-		},
+			return []byte(`method: POST
+action: test.action`), nil
+		},	
 	}
 	server := NewServer(nil, fileReader, "/test/routes", zerolog.Nop())
 

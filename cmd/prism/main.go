@@ -14,7 +14,7 @@ import (
 
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
 	"github.com/Ow1Dev/NoctiFunc/pkgs/communication"
-	"github.com/Ow1Dev/NoctiFunc/pkgs/ignite"
+	"github.com/Ow1Dev/NoctiFunc/pkgs/prism"
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {
@@ -29,11 +29,11 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	logger := logger.InitLog(w, *debug)
 
 	// Create dependencies
-	fileReader := &ignite.OSFileReader{}
+	fileReader := &prism.OSFileReader{}
 	grpcClient := communication.NewGRPCClient("localhost:5001", time.Second)
 	
 	// Create server
-	srv := ignite.NewServer(grpcClient, fileReader, "/var/lib/noctifunc/routes", logger)
+	srv := prism.NewServer(grpcClient, fileReader, "/var/lib/noctifunc/routes", logger)
 	
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort("0.0.0.0", "5000"),

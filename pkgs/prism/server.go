@@ -1,4 +1,4 @@
-package ignite
+package prism
 
 import (
 	"context"
@@ -46,7 +46,7 @@ func NewServer(commClient CommunicationClient, fileReader FileReader, routesPath
 		commClient: commClient,
 		fileReader: fileReader,
 		routesPath: routesPath,
-		logger:     logger.With().Str("component", "ignite_server").Logger(),
+		logger:     logger.With().Str("component", "prism_server").Logger(),
 	}
 }
 
