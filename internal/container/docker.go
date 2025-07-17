@@ -67,7 +67,7 @@ func NewDockerContainer(
 	return &DockerContainer{
 		cli:          cli,
 		config:       config,
-		logger:       logger,
+		logger:       logger.With().Str("component", "docker_container").Logger(),
 		network:      network,
 		portAllocator: portAllocator,
 		timeProvider: timeProvider,

@@ -35,7 +35,7 @@ func NewExecuter(container Container, keyService KeyService, grpcFuncExecuter GR
 		container: container,
 		grpcFuncExecuter: grpcFuncExecuter,
 		keyService: keyService,
-		logger: logger,
+		logger: logger.With().Str("component", "executer").Logger(),
 	}
 }
 
