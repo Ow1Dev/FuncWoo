@@ -1,4 +1,4 @@
-package routes
+package prism
 
 import "testing"
 

@@ -8,10 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Ow1Dev/NoctiFunc/internal/routes"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 type CommunicationClient interface {
@@ -117,7 +115,7 @@ func (s *Server) processAction(ctx context.Context, action string, body string, 
 }
 
 // loadRouteConfig loads and parses route configuration from file
-func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
+func (s *Server) loadRouteConfig(action string) (*RouteConfig, error) {
 	filePath := fmt.Sprintf("%s/%s.yml", s.routesPath, action)
 
 	if !s.fileReader.FileExists(filePath) {
@@ -135,8 +133,8 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 		}
 	}
 
-	var cfg routes.RouteConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	cfg, err := loadFromYaml(data)
+	if err != nil {
 		return nil, &HTTPError{
 			Code: http.StatusInternalServerError,
 			Message:    "Error parsing action file: " + err.Error(),
@@ -150,7 +148,7 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 		}
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
 
 type HTTPError struct {

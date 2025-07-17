@@ -8,14 +8,17 @@ import (
 	"strings"
 )
 
-type FileSystemKeyService struct{}
-
-func NewFileSystemKeyService() *FileSystemKeyService {
-	return &FileSystemKeyService{}
+type FileSystemKeyService struct{
+	filepath string
+}
+func NewFileSystemKeyService(filepath string) *FileSystemKeyService {
+	return &FileSystemKeyService{
+		filepath: filepath,
+	}
 }
 
 func (f *FileSystemKeyService) GetKeyFromAction(action string) (string, error) {
-	path := filepath.Join("/var/lib/noctifunc/action", action)
+	path := filepath.Join(f.filepath, action)
 	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to open action file: %w", err)

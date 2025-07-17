@@ -60,7 +60,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	}
 
 	grpcFuncExecuter := funcinvoker.NewStandardGRPCClient(10 * time.Second)
-	fileKeyService := keyservice.NewFileSystemKeyService()
+	fileKeyService := keyservice.NewFileSystemKeyService("/var/lib/noctifunc/action")
+
 
 	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
 

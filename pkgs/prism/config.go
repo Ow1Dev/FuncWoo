@@ -1,6 +1,10 @@
-package routes
+package prism
 
-import "fmt"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 type RouteConfig struct {
 	Action string `yaml:"action"`
@@ -19,3 +23,11 @@ func (rc *RouteConfig) Validate() error {
 	}
 }
 
+func loadFromYaml(data []byte) (*RouteConfig, error) {
+	var cfg RouteConfig
+	err := yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing YAML: %w", err)
+	}
+	return &cfg, nil
+}
