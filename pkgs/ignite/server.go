@@ -98,7 +98,7 @@ func (s *Server) processAction(ctx context.Context, action string, body string, 
 
 	if cfg.Method != method {
 		return "", &HTTPError{
-			StatusCode: http.StatusMethodNotAllowed,
+			Code: http.StatusMethodNotAllowed,
 			Message:    "Method not allowed for action " + action,
 		}
 	}
@@ -108,7 +108,7 @@ func (s *Server) processAction(ctx context.Context, action string, body string, 
 	resutl, err := s.commClient.SendAction(ctx, action, body)
 	if err != nil {
 		return "" , &HTTPError{
-			StatusCode: http.StatusInternalServerError,
+			Code: http.StatusInternalServerError,
 			Message:    "Error processing action: " + err.Error(),
 		}
 	}
@@ -122,7 +122,7 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 
 	if !s.fileReader.FileExists(filePath) {
 		return nil, &HTTPError{
-			StatusCode: http.StatusNotFound,
+			Code: http.StatusNotFound,
 			Message:    "Action " + action + " not found",
 		}
 	}
@@ -130,7 +130,7 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 	data, err := s.fileReader.ReadFile(filePath)
 	if err != nil {
 		return nil, &HTTPError{
-			StatusCode: http.StatusInternalServerError,
+			Code: http.StatusInternalServerError,
 			Message:    "Error reading action file: " + err.Error(),
 		}
 	}
@@ -138,14 +138,14 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 	var cfg routes.RouteConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, &HTTPError{
-			StatusCode: http.StatusInternalServerError,
+			Code: http.StatusInternalServerError,
 			Message:    "Error parsing action file: " + err.Error(),
 		}
 	}
 
 	if err := cfg.Validate(); err != nil {
 		return nil, &HTTPError{
-			StatusCode: http.StatusInternalServerError,
+			Code: http.StatusInternalServerError,
 			Message:    "Error validating action config: " + err.Error(),
 		}
 	}
@@ -154,8 +154,8 @@ func (s *Server) loadRouteConfig(action string) (*routes.RouteConfig, error) {
 }
 
 type HTTPError struct {
-	StatusCode int
-	Message    string
+	Code    int
+	Message string
 }
 
 func (e *HTTPError) Error() string {
@@ -164,7 +164,7 @@ func (e *HTTPError) Error() string {
 
 func (s *Server) handleError(w http.ResponseWriter, err error) {
 	if httpErr, ok := err.(*HTTPError); ok {
-		http.Error(w, httpErr.Message, httpErr.StatusCode)
+		http.Error(w, httpErr.Message, httpErr.Code)
 		return
 	}
 
