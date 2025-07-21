@@ -30,6 +30,14 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
+func NewHandler(handlerFunc any) Handler {
+	return NewHandlerWithOptions(handlerFunc)
+}
+
+func NewHandlerWithOptions(handlerFunc any, options ...Option) Handler {
+	return newHandler(handlerFunc, options...)
+}
+
 // newHandler constructs a handlerOptions object and wraps a function as a handler.
 func newHandler(fn any, opts ...Option) *handlerOptions {
 	if h, ok := fn.(*handlerOptions); ok {
@@ -145,15 +153,23 @@ func wrapHandler(fn any) handlerFunc {
 
 		var args []reflect.Value
 		if takesCtx {
+			expectedCtxType := typ.In(0)
+
+			// Check if ctx can be assigned to expectedCtxType
+			if !reflect.TypeOf(ctx).AssignableTo(expectedCtxType) {
+				return nil, fmt.Errorf("provided context of type %T cannot be assigned to expected parameter type %v", ctx, expectedCtxType)
+			}
+
 			args = append(args, reflect.ValueOf(ctx))
 		}
 
 		// Prepare input arguments
-		if typ.NumIn() > 0 {
-			paramIndex := 0
-			if takesCtx {
-				paramIndex = 1
-			}
+		paramIndex := 0
+		if takesCtx {
+			paramIndex = 1
+		}
+
+		if paramIndex < typ.NumIn() {
 			eventType := typ.In(paramIndex)
 			event := reflect.New(eventType).Interface()
 
