@@ -9,6 +9,7 @@ import (
 
 	"gotest.tools/assert"
 )
+
 func TestInvalidHandlers(t *testing.T) {
 	type valuer interface {
 		Value(key any) any
