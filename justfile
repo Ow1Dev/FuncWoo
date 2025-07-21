@@ -4,7 +4,7 @@ default:
 
 # Run both Go services concurrently with prefixed logs
 run:
-    set -euxo pipefail; \
+    set -euo pipefail; \
     trap 'echo "Shutting down..."; kill 0' SIGINT SIGTERM; \
     go run ./cmd/prism/main.go --debug 2>&1 | sed "s/^/[PRISM] /" & \
     go run ./cmd/igniterelay/main.go --debug 2>&1 | sed "s/^/[IGNITERELAY] /" & \
