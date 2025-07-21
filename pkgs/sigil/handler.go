@@ -1,217 +1,193 @@
 package sigil
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
-
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/server"
 )
 
-var (
-	ErrNoHandler = errors.New("no handler provided") 
-	ErrInvalidHandler = errors.New("invalid handler type, must be a function")
-	ErrTooManyArguments = errors.New("handler function must accept 0, 1, or 2 arguments")
-	ErrTooManyReturns = errors.New("handler function must return 0, 1, or 2 values")
-	ErrHandlerSingleMissingError = errors.New("handler returns a single value, but it does not implement error")
-	ErrHandlerTwoMissingError = errors.New("handler returns two values, but the second does not implement error")
-	ErrHandlerContextMismatch = errors.New("handler's first argument must be context.Context or compatible with it")
-	ErrFirstArgNotContext = errors.New("handler takes two arguments, but the first is not context.Context")
-	ErrFirstParamMustBeContext = errors.New("first parameter must be context.Context")
-	ErrInvalidPayload = errors.New("invalid payload, must be a valid JSON object or empty")
-)
-
-type Handler struct {
-	handlerValue reflect.Value
-	handlerType  reflect.Type
-	numIn        int
-	numOut       int
+type Handler interface {
+	Invoke(ctx context.Context, payload []byte) ([]byte, error)
 }
 
-// NewHandler creates and validates a new handler
-func NewHandler(handler any) (*Handler, error) { 
-	if handler == nil {
-		return nil, ErrNoHandler
-	}
+type handlerFunc func(context.Context, []byte) (io.Reader, error)
 
-	handlerValue := reflect.ValueOf(handler)
-	handlerType := handlerValue.Type()
-
-	if handlerType.Kind() != reflect.Func {
-		return nil, ErrInvalidHandler
-	}
-
-	numIn := handlerType.NumIn()
-	if numIn > 2 {
-		return nil, ErrTooManyArguments
-	}
-
-	numOut := handlerType.NumOut()
-	if numOut > 2 {
-		return nil, ErrTooManyReturns
-	}
-
-	// Validate return types
-	if numOut == 1 {
-		returnType := handlerType.Out(0)
-		errorInterface := reflect.TypeOf((*error)(nil)).Elem()
-		if !returnType.Implements(errorInterface) {
-			return nil, ErrHandlerSingleMissingError
-		}
-	} else if numOut == 2 {
-		// Second return value must implement error
-		secondReturnType := handlerType.Out(1)
-		errorInterface := reflect.TypeOf((*error)(nil)).Elem()
-		if !secondReturnType.Implements(errorInterface) {
-			return nil, ErrHandlerTwoMissingError
-		}
-	}
-
-	// If handler takes arguments, validate them
-	if numIn > 0 {
-		firstArgType := handlerType.In(0)
-		
-		// Check if first argument is context.Context or compatible
-		contextInterface := reflect.TypeOf((*context.Context)(nil)).Elem()
-		
-		if firstArgType.Kind() == reflect.Interface {
-			// Check if it's exactly context.Context or has the same methods
-			if !isContextCompatible(firstArgType, contextInterface) {
-				if numIn == 2 {
-					return nil, ErrFirstArgNotContext
-				} else {
-					return nil, ErrFirstParamMustBeContext
-				}
-			}
-		} else if !firstArgType.Implements(contextInterface) {
-			if numIn == 2 {
-				return nil, ErrFirstArgNotContext
-			} else {
-				return nil, ErrFirstParamMustBeContext
-			}
-		}
-	}
-
-	return &Handler{
-		handlerValue: handlerValue,
-		handlerType:  handlerType,
-		numIn:        numIn,
-		numOut:       numOut,
-	}, nil
+type handlerOptions struct {
+	handlerFunc
+	baseContext  context.Context
 }
 
-func (h *Handler) Invoke(ctx context.Context, payload []byte) (*pb.InvokeResult, error) {
-	var args []reflect.Value
+type Option func(*handlerOptions)
 
-	if h.numIn == 0 {
-	} else if h.numIn == 1 {
-		args = append(args, reflect.ValueOf(ctx))
-	} else if h.numIn == 2 {
-		args = append(args, reflect.ValueOf(ctx))
-		argType := h.handlerType.In(1)
-
-		if argType == reflect.TypeOf((*any)(nil)).Elem() {
-			var inputValue any
-			if len(payload) > 0 {
-				err := json.Unmarshal(payload, &inputValue)
-				if err != nil {
-					return nil, fmt.Errorf("failed to unmarshal request body: %w", ErrInvalidPayload)
-				}
-			}
-			args = append(args, reflect.ValueOf(inputValue))
-		} else {
-			var inputValue reflect.Value
-			if argType.Kind() == reflect.Ptr {
-				inputValue = reflect.New(argType.Elem()) // *T
-			} else {
-				inputValue = reflect.New(argType) // *T
-			}
-
-			// Unmarshal JSON into inputValue (which is a pointer)
-			if len(payload) > 0 {
-				err := json.Unmarshal(payload, inputValue.Interface())
-				if err != nil {
-					return nil, fmt.Errorf("failed to unmarshal request body: %w", ErrInvalidPayload)
-				}
-			}
-
-			// If handler expects value, dereference pointer
-			if argType.Kind() != reflect.Ptr {
-				inputValue = inputValue.Elem()
-			}
-
-			args = append(args, inputValue)
-		}
-	}
-
-	results := h.handlerValue.Call(args)
-
-	// Expected returns: 
-	// () - no return
-	// (error) - single error return
-	// (Response, error) - response and error
-	if len(results) == 0 {
-		// No return values
-		return &pb.InvokeResult{Output: "{}"}, nil
-	} else if len(results) == 1 {
-		// Only error returned
-		errInterface := results[0].Interface()
-		if errInterface != nil {
-			return nil, errInterface.(error)
-		}
-		// no response
-		return &pb.InvokeResult{Output: "{}"}, nil
-	} else if len(results) == 2 {
-		// First is response, second is error
-		errInterface := results[1].Interface()
-		if errInterface != nil {
-			return nil, errInterface.(error)
-		}
-		respInterface := results[0].Interface()
-
-		// Marshal the response
-		respJSON, err := json.Marshal(respInterface)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal response: %w", err)
-		}
-		return &pb.InvokeResult{Output: string(respJSON)}, nil
-	} else {
-		return nil, fmt.Errorf("handler returned unexpected number of values: %d", len(results))
+// WithContext sets a custom base context for the handler.
+func WithContext(ctx context.Context) Option {
+	return func(h *handlerOptions) {
+		h.baseContext = ctx
 	}
 }
 
-// isContextCompatible checks if an interface type is compatible with context.Context
-func isContextCompatible(interfaceType, contextType reflect.Type) bool {
-	if interfaceType.Kind() != reflect.Interface {
-		return false
+// newHandler constructs a handlerOptions object and wraps a function as a handler.
+func newHandler(fn any, opts ...Option) *handlerOptions {
+	if h, ok := fn.(*handlerOptions); ok {
+		return h
 	}
 
-	contextMethods := make(map[string]reflect.Type)
-	for i := range contextType.NumMethod() {
-		method := contextType.Method(i)
-		contextMethods[method.Name] = method.Type
+	h := &handlerOptions{
+		baseContext: context.Background(),
 	}
 
-	interfaceMethods := make(map[string]reflect.Type)
-	for i := range interfaceType.NumMethod() {
-		method := interfaceType.Method(i)
-		interfaceMethods[method.Name] = method.Type
+	for _, opt := range opts {
+		opt(h)
 	}
 
-	// Check if the interface has exactly the same methods as context.Context
-	if len(interfaceMethods) != len(contextMethods) {
-		return false
-	}
-
-	// For it to be compatible, it should have the same methods as context.Context
-	// or be a superset (which we'll reject) or subset (which we'll also reject)
-	for name, methodType := range contextMethods {
-		if interfaceMethodType, exists := interfaceMethods[name]; !exists || !methodType.AssignableTo(interfaceMethodType) {
-			return false
-		}
-	}
-
-	return true
+	h.handlerFunc = wrapHandler(fn)
+	return h
 }
+
+func (h handlerFunc) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
+	resp, err := h(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cleanup resources if response implements io.Closer
+	if closer, ok := resp.(io.Closer); ok {
+		defer closer.Close()
+	}
+
+	// Fast-path if it's already a bytes.Buffer or jsonOutBuffer
+	switch b := resp.(type) {
+	case *jsonOutBuffer:
+		return b.Bytes(), nil
+	case *bytes.Buffer:
+		return b.Bytes(), nil
+	default:
+		return io.ReadAll(resp)
+	}
+}
+
+func errorHandler(err error) handlerFunc {
+	return func(_ context.Context, _ []byte) (io.Reader, error) {
+		return nil, err
+	}
+}
+
+func handlerTakesContext(t reflect.Type) (bool, error) {
+	switch t.NumIn() {
+	case 0:
+		return false, nil
+	case 1, 2:
+		arg := t.In(0)
+		ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
+		if !arg.Implements(ctxType) {
+			return false, fmt.Errorf("first argument does not implement context.Context: got %v", arg)
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("handler has too many parameters: %d", t.NumIn())
+	}
+}
+
+func validateReturnTypes(t reflect.Type) error {
+	errType := reflect.TypeOf((*error)(nil)).Elem()
+	switch t.NumOut() {
+	case 1:
+		if !t.Out(0).Implements(errType) {
+			return fmt.Errorf("single return must be error, got %v", t.Out(0))
+		}
+	case 2:
+		if !t.Out(1).Implements(errType) {
+			return fmt.Errorf("second return must be error, got %v", t.Out(1))
+		}
+	case 0:
+		return fmt.Errorf("handler must return at least an error")
+	default:
+		return fmt.Errorf("too many return values: %d", t.NumOut())
+	}
+	return nil
+}
+
+// jsonOutBuffer is used to avoid reallocation for JSON-encoded responses.
+type jsonOutBuffer struct {
+	*bytes.Buffer
+}
+
+// wrapHandler converts a user-defined function to a handlerFunc.
+func wrapHandler(fn any) handlerFunc {
+	if fn == nil {
+		return errorHandler(errors.New("handler function is nil"))
+	}
+
+	val := reflect.ValueOf(fn)
+	typ := reflect.TypeOf(fn)
+
+	if typ.Kind() != reflect.Func {
+		return errorHandler(fmt.Errorf("expected a function, got %v", typ.Kind()))
+	}
+
+	takesCtx, err := handlerTakesContext(typ)
+	if err != nil {
+		return errorHandler(err)
+	}
+
+	if err := validateReturnTypes(typ); err != nil {
+		return errorHandler(err)
+	}
+
+	out := &jsonOutBuffer{Buffer: new(bytes.Buffer)}
+
+	return func(ctx context.Context, payload []byte) (io.Reader, error) {
+		out.Reset()
+
+		var args []reflect.Value
+		if takesCtx {
+			args = append(args, reflect.ValueOf(ctx))
+		}
+
+		// Prepare input arguments
+		if typ.NumIn() > 0 {
+			paramIndex := 0
+			if takesCtx {
+				paramIndex = 1
+			}
+			eventType := typ.In(paramIndex)
+			event := reflect.New(eventType).Interface()
+
+			if err := json.Unmarshal(payload, event); err != nil {
+				return nil, fmt.Errorf("failed to decode input: %w", err)
+			}
+			args = append(args, reflect.ValueOf(event).Elem())
+		}
+
+		// Invoke the function
+		results := val.Call(args)
+
+		// Handle errors
+		last := results[len(results)-1].Interface()
+		if err, ok := last.(error); ok && err != nil {
+			return nil, err
+		}
+
+		var resp any
+		if len(results) > 1 {
+			resp = results[0].Interface()
+		}
+
+		// Encode result to JSON
+		encoder := json.NewEncoder(out)
+		if err := encoder.Encode(resp); err != nil {
+			// Allow returning io.Reader directly
+			if reader, ok := resp.(io.Reader); ok {
+				return reader, nil
+			}
+			return nil, fmt.Errorf("response encoding failed: %w", err)
+		}
+
+		return out, nil
+	}
+}
+

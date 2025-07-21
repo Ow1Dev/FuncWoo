@@ -10,8 +10,14 @@ type Request struct {
 	Name string `json:"name"`
 }
 
-func HandleRequest(ctx context.Context, r Request) (string, error) {
-	return "Hello, " + r.Name + "!", nil
+type Response struct {
+	Message string `json:"message"`
+}
+
+func HandleRequest(ctx context.Context, r Request) (Response, error) {
+	return Response{
+	 	Message: "Hello, " + r.Name + "!",
+	}, nil
 } 
 
 func main() {
