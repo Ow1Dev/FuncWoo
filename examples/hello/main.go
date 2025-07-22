@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
-
-	"github.com/Ow1Dev/NoctiFunc/pkgs/sigil"
+	"github.com/Ow1Dev/NoctiFunc/pkg/sigil"
 )
 
-func HandleRequest(ctx context.Context) (string, error) {
+func HandleRequest() (string, error) {
 	return "Hello world", nil
-} 
+}
 
 func main() {
 	sigil.Start(HandleRequest)

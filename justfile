@@ -1,8 +1,8 @@
-# List available commands
+# Default command: List all available just commands
 default:
     @just --list
 
-# Run both Go services concurrently
+# Run both Go services concurrently with prefixed logs
 run:
     set -euo pipefail; \
     trap 'echo "Shutting down..."; kill 0' SIGINT SIGTERM; \
@@ -10,10 +10,19 @@ run:
     go run ./cmd/igniterelay/main.go --debug 2>&1 | sed "s/^/[IGNITERELAY] /" & \
     wait
 
+lint:
+    golangci-lint run
+
+# Run tests excluding any package matching '/pkgs/api'
+test:
+   go test $(go list ./... | grep -v -E '(/pkgs/api|/examples)')
+
+# Update nix flakes and Go modules
 update:
     nix flake update
     go get -u ./...
 
+# Build nix flake for the specified profile (default: 'default')
 package profile='default':
     nix build \
         --json \
@@ -21,20 +30,6 @@ package profile='default':
         --print-build-logs \
         '.#{{ profile }}'
 
+# Generate Go code from proto files in the api directory
 generate:
-    rm -rfv pkgs/api
-    mkdir -pv pkgs/api
-    protoc \
-      --go_opt=paths=source_relative \
-      --go_out=pkgs/api \
-      --go-grpc_opt=paths=source_relative \
-      --go-grpc_out=pkgs/api \
-      --proto_path=api \
-      server/server.proto
-    protoc \
-      --go_opt=paths=source_relative \
-      --go_out=pkgs/api \
-      --go-grpc_opt=paths=source_relative \
-      --go-grpc_out=pkgs/api \
-      --proto_path=api \
-      communication/communication.proto
+    ./scripts/generate.sh

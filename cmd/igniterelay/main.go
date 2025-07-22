@@ -11,9 +11,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Ow1Dev/NoctiFunc/internal/container"
 	"github.com/Ow1Dev/NoctiFunc/internal/executer"
+	"github.com/Ow1Dev/NoctiFunc/internal/funcinvoker"
+	"github.com/Ow1Dev/NoctiFunc/internal/keyservice"
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
+	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/communication"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
@@ -35,7 +38,7 @@ func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.
 
 	return &pb.ExecuteResponse{
 		Status: "success",
-		Resp: rsp,
+		Resp:   rsp,
 	}, nil
 }
 
@@ -48,15 +51,18 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
-	logger.InitLog(w, *debug)
+	logger := logger.InitLog(w, *debug)
 
-	dockerRunner, err := executer.NewDockerContainer()
+	dockerRunner, err := container.NewDockerContainerWithDefaults(logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
 		os.Exit(1)
 	}
 
-	executer := executer.NewExecuter(dockerRunner)
+	grpcFuncExecuter := funcinvoker.NewStandardGRPCClient(10 * time.Second)
+	fileKeyService := keyservice.NewFileSystemKeyService("/var/lib/noctifunc/action")
+
+	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
 
 	s := grpc.NewServer()
 	pb.RegisterCommunicationServiceServer(s, &serviceServer{
@@ -80,10 +86,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		shutdownCtx := context.Background()
-		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10 * time.Second)
 		defer cancel()
-		s.Stop()
+		s.GracefulStop()
 	}()
 	wg.Wait()
 	return nil

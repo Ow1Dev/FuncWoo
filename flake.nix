@@ -26,6 +26,7 @@
             inputsFrom = [self'.packages.default];
             buildInputs = with pkgs; [
               go_1_24
+              golangci-lint
               just
               protobuf
               protoc-gen-go
