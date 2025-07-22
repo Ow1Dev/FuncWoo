@@ -87,10 +87,8 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		shutdownCtx := context.Background()
-		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10 * time.Second)
 		defer cancel()
-		s.Stop()
+		s.GracefulStop()
 	}()
 	wg.Wait()
 	return nil

@@ -182,7 +182,7 @@ func (d *DockerContainer) IsRunning(key string, ctx context.Context) bool {
 func (d *DockerContainer) Start(key string, ctx context.Context) error {
 	containerId, err := d.getOrCreateContainer(key, ctx)
 	if err != nil {
-		return fmt.Errorf("Failed to get or create container") 
+		return fmt.Errorf("failed to get or create container") 
 	}
 
 	d.logger.Info().Msgf("Starting Docker container with ID: %s for key: %s", containerId, key)

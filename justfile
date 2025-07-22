@@ -10,6 +10,9 @@ run:
     go run ./cmd/igniterelay/main.go --debug 2>&1 | sed "s/^/[IGNITERELAY] /" & \
     wait
 
+lint:
+  staticcheck ./...
+
 # Run tests excluding any package matching '/pkgs/api'
 test:
    go test $(go list ./... | grep -v -E '(/pkgs/api|/examples)')

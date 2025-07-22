@@ -285,11 +285,15 @@ func TestInvalidHandlers(t *testing.T) {
 	}
 }
 
+type ctxKey string
+
 func TestWithContext(t *testing.T) {
-	customCtx := context.WithValue(context.Background(), "key", "value")
+	const testKey ctxKey = "key"
+
+	customCtx := context.WithValue(context.Background(), testKey, "value")
 	
 	handler := newHandlerWithOptions(func(ctx context.Context) (TestOutput, error) {
-		value := ctx.Value("key")
+		value := ctx.Value(testKey)
 		if value == nil {
 			return TestOutput{}, errors.New("context value not found")
 		}

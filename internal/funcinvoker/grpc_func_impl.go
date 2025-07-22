@@ -31,7 +31,7 @@ func (c *StandardGRPCClient) Invoke(ctx context.Context, url string, payload str
 
 	client := pb.NewFunctionRunnerServiceClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
 	log.Debug().Msgf("Request body: %s", payload)
