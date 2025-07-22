@@ -16,7 +16,6 @@ func TestPortAllocator_getRandomPort(t *testing.T) {
 	allocator := NewNetworkPortAllocator(networkMock)
 
 	port, err := allocator.GetRandomPort()
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

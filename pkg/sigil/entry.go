@@ -27,9 +27,7 @@ func StartWithOptions(handler any, options ...Option) {
 	start(newHandler(handler, options...))
 }
 
-var (
-	logFatalf = log.Fatalf
-)
+var logFatalf = log.Fatalf
 
 func start(handler *handlerOptions) {
 	err := startRuntimeGRPCLoop(handler)

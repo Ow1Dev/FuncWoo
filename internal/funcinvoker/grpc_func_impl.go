@@ -21,13 +21,17 @@ func NewStandardGRPCClient(timeout time.Duration) *StandardGRPCClient {
 	}
 }
 
-func (c *StandardGRPCClient) Invoke(ctx context.Context, url string, payload string) (string, error) {
+func (c *StandardGRPCClient) Invoke(ctx context.Context, url, payload string) (string, error) {
 	conn, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to gRPC server: %w", err)
 	}
 
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("error closing connection: %v", err)
+		}
+	}()
 
 	client := pb.NewFunctionRunnerServiceClient(conn)
 

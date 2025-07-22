@@ -24,7 +24,12 @@ func (f *FileSystemKeyService) GetKeyFromAction(action string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open action file: %w", err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("error closing file %s: %v\n", path, err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	if scanner.Scan() {

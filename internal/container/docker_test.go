@@ -40,7 +40,8 @@ func (m *MockDockerClient) ContainerStart(ctx context.Context, containerID strin
 }
 
 func (m *MockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+) (container.CreateResponse, error) {
 	if m.containerCreateFunc != nil {
 		return m.containerCreateFunc(ctx, config, hostConfig, networkingConfig, platform, containerName)
 	}
@@ -130,6 +131,7 @@ func TestDockerContainer_getPort_Success(t *testing.T) {
 		t.Errorf("Expected port 9090, got %d", port)
 	}
 }
+
 func TestDockerContainer_getPort_NoMapping(t *testing.T) {
 	mockClient := &MockDockerClient{
 		containerInspectFunc: func(ctx context.Context, containerID string) (container.InspectResponse, error) {
@@ -186,7 +188,8 @@ func TestDockerContainer_start_Success(t *testing.T) {
 			return nil
 		},
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+		) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
 	}
@@ -213,7 +216,6 @@ func TestDockerContainer_start_Success(t *testing.T) {
 	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.Start("test-key", context.Background())
-
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -231,7 +233,8 @@ func TestDockerContainer_start_StartError(t *testing.T) {
 			return errors.New("start failed")
 		},
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+		) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
 	}
@@ -292,7 +295,6 @@ func TestDockerContainer_waitForContainer_Success(t *testing.T) {
 	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, mockTime, DefaultDockerConfig(), zerolog.Nop())
 
 	err := dockerContainer.WaitForContainer("test-key", context.Background())
-
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -339,7 +341,8 @@ func TestDockerContainer_create_Success(t *testing.T) {
 
 	mockClient := &MockDockerClient{
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+		) (container.CreateResponse, error) {
 			createCalled = true
 
 			// Verify configuration
@@ -369,7 +372,6 @@ func TestDockerContainer_create_Success(t *testing.T) {
 	dockerContainer := NewDockerContainer(mockClient, mockPortAllocator, mockNetwork, &MockTimeProvider{}, DefaultDockerConfig(), zerolog.Nop())
 
 	containerID, err := dockerContainer.create("test-key", context.Background())
-
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -384,7 +386,8 @@ func TestDockerContainer_create_Success(t *testing.T) {
 func TestDockerContainer_create_Error(t *testing.T) {
 	mockClient := &MockDockerClient{
 		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+		) (container.CreateResponse, error) {
 			return container.CreateResponse{}, errors.New("create failed")
 		},
 	}

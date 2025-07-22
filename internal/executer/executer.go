@@ -2,15 +2,14 @@ package executer
 
 import (
 	"context"
-	"strconv"
-
 	"fmt"
+	"strconv"
 
 	"github.com/rs/zerolog"
 )
 
 type GRPCFuncExecuter interface {
-	Invoke(ctx context.Context, url string, payload string) (string, error)
+	Invoke(ctx context.Context, url, payload string) (string, error)
 }
 
 type KeyService interface {
@@ -39,7 +38,7 @@ func NewExecuter(container Container, keyService KeyService, grpcFuncExecuter GR
 	}
 }
 
-func (e *Executer) Execute(action string, body string, ctx context.Context) (string, error) {
+func (e *Executer) Execute(action, body string, ctx context.Context) (string, error) {
 	key, err := e.keyService.GetKeyFromAction(action)
 	if err != nil {
 		return "", fmt.Errorf("failed to get key from action: %w", err)

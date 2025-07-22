@@ -23,12 +23,16 @@ func NewGRPCClient(address string, timeout time.Duration) *GRPCClient {
 	}
 }
 
-func (c *GRPCClient) SendAction(ctx context.Context, action string, body string) (string, error) {
+func (c *GRPCClient) SendAction(ctx context.Context, action, body string) (string, error) {
 	conn, err := grpc.NewClient(c.address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to gRPC server: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	client := pb.NewCommunicationServiceClient(conn)
 
@@ -39,7 +43,6 @@ func (c *GRPCClient) SendAction(ctx context.Context, action string, body string)
 		Action: action,
 		Body:   body,
 	})
-
 	if err != nil {
 		return "", fmt.Errorf("failed to send action to remote service: %w", err)
 	}

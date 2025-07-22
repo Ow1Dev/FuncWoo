@@ -1,0 +1,28 @@
+version: "2"
+output:
+  sort-order:
+    - file
+linters:
+  default: none
+  enable:
+    - staticcheck      # powerful all-in-one linter
+    - errcheck         # checks for ignored errors
+    - unused           # checks for unused vars/types/functions
+    - govet            # official Go vet tool
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
+run:
+  timeout: 10m
+  tests: true
+  skip-dirs:
+    - vendor
+  skip-files:
+    - ".*_gen.go"

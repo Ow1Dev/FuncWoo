@@ -47,10 +47,10 @@ func (m *MockKeyService) GetKeyFromAction(action string) (string, error) {
 }
 
 type MockGRPCFuncExecuter struct {
-	invokeFunc func(ctx context.Context, url string, payload string) (string, error)
+	invokeFunc func(ctx context.Context, url, payload string) (string, error)
 }
 
-func (m *MockGRPCFuncExecuter) Invoke(ctx context.Context, url string, payload string) (string, error) {
+func (m *MockGRPCFuncExecuter) Invoke(ctx context.Context, url, payload string) (string, error) {
 	if m.invokeFunc != nil {
 		return m.invokeFunc(ctx, url, payload)
 	}
@@ -76,7 +76,7 @@ func TextExecuter_Execute_Success_ContainerRunning(t *testing.T) {
 	}
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{
-		invokeFunc: func(ctx context.Context, url string, payload string) (string, error) {
+		invokeFunc: func(ctx context.Context, url, payload string) (string, error) {
 			return "mocked response", nil
 		},
 	}
@@ -114,7 +114,7 @@ func TestExecuter_Execute_Success_ContainerNotRunning(t *testing.T) {
 	}
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{
-		invokeFunc: func(ctx context.Context, url string, payload string) (string, error) {
+		invokeFunc: func(ctx context.Context, url, payload string) (string, error) {
 			return "mocked response", nil
 		},
 	}
@@ -239,7 +239,7 @@ func TestExecuter_Execute_GRPCFuncExecuter(t *testing.T) {
 	}
 
 	mockGRPCFuncExecuter := &MockGRPCFuncExecuter{
-		invokeFunc: func(ctx context.Context, url string, payload string) (string, error) {
+		invokeFunc: func(ctx context.Context, url, payload string) (string, error) {
 			return "", fmt.Errorf("gRPC client error")
 		},
 	}

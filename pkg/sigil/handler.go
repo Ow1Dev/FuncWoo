@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"sync"
 )
@@ -61,7 +62,11 @@ func (h handlerFunc) Invoke(ctx context.Context, payload []byte) ([]byte, error)
 
 	// Cleanup resources if response implements io.Closer
 	if closer, ok := resp.(io.Closer); ok {
-		defer closer.Close()
+		defer func() {
+			if err := closer.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "error closing response: %v\n", err)
+			}
+		}()
 	}
 
 	// Fast-path if it's already a bytes.Buffer or jsonOutBuffer

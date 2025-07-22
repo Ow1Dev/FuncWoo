@@ -63,7 +63,8 @@ func NewDockerContainer(
 	network network.NetTransport,
 	timeProvider TimeProvider,
 	config DockerConfig,
-	logger zerolog.Logger) *DockerContainer {
+	logger zerolog.Logger,
+) *DockerContainer {
 	return &DockerContainer{
 		cli:           cli,
 		config:        config,
@@ -103,7 +104,8 @@ func (d *DockerClientAdapter) ContainerStart(ctx context.Context, containerID st
 }
 
 func (d *DockerClientAdapter) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
+	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string,
+) (container.CreateResponse, error) {
 	return d.cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, platform, containerName)
 }
 
@@ -131,7 +133,10 @@ func (d *DockerContainer) WaitForContainer(key string, ctx context.Context) erro
 			if port > 0 {
 				conn, err := d.network.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), d.config.ConnectionTimeout)
 				if err == nil {
-					conn.Close()
+					err := conn.Close()
+					if err != nil {
+						return fmt.Errorf("failed to close connection: %w", err)
+					}
 					d.logger.Info().Msgf("Container %s is ready and accepting connections", key)
 					return nil
 				}
@@ -265,7 +270,6 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 			},
 		},
 	}, nil, nil, key)
-
 	if err != nil {
 		d.logger.Error().Err(err).Msgf("Failed to create container for key: %s", key)
 		return "", fmt.Errorf("failed to create container: %w", err)

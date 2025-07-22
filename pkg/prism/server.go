@@ -13,7 +13,7 @@ import (
 )
 
 type CommunicationClient interface {
-	SendAction(ctx context.Context, action string, body string) (string, error)
+	SendAction(ctx context.Context, action, body string) (string, error)
 }
 
 type FileReader interface {
@@ -60,7 +60,12 @@ func (s *Server) handleAction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "error closing request body: %v\n", err)
+		}
+	}()
 
 	if r.URL.Path == "/" {
 		http.Error(w, "No action specified", http.StatusBadRequest)
@@ -79,7 +84,13 @@ func (s *Server) handleAction(w http.ResponseWriter, r *http.Request) {
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(result))
+
+	_, err = w.Write([]byte(result))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to write response")
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // extractAction converts URL path to action name
@@ -88,7 +99,7 @@ func (s *Server) extractAction(path string) string {
 	return strings.ReplaceAll(action, "/", ".")
 }
 
-func (s *Server) processAction(ctx context.Context, action string, body string, method string) (string, error) {
+func (s *Server) processAction(ctx context.Context, action, body, method string) (string, error) {
 	cfg, err := s.loadRouteConfig(action)
 	if err != nil {
 		return "", err

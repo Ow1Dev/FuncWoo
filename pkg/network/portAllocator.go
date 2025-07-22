@@ -25,7 +25,11 @@ func (a *NetworkPortAllocator) GetRandomPort() (int, error) {
 		return 0, fmt.Errorf("failed to create listener: %w", err)
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
-	listener.Close() // Close the listener since we only needed the port
+
+	err = listener.Close()
+	if err != nil {
+		return 0, fmt.Errorf("failed to close listener: %w", err)
+	}
 
 	return port, nil
 }

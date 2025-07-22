@@ -13,10 +13,10 @@ import (
 
 // Mock implementations for testing
 type MockCommunicationClient struct {
-	SendActionFunc func(ctx context.Context, action string, body string) (string, error)
+	SendActionFunc func(ctx context.Context, action, body string) (string, error)
 }
 
-func (m *MockCommunicationClient) SendAction(ctx context.Context, action string, body string) (string, error) {
+func (m *MockCommunicationClient) SendAction(ctx context.Context, action, body string) (string, error) {
 	if m.SendActionFunc != nil {
 		return m.SendActionFunc(ctx, action, body)
 	}
@@ -45,7 +45,7 @@ func (m *MockFileReader) FileExists(filename string) bool {
 
 func TestServer_HandleAction_Success(t *testing.T) {
 	commClient := &MockCommunicationClient{
-		SendActionFunc: func(ctx context.Context, action string, body string) (string, error) {
+		SendActionFunc: func(ctx context.Context, action, body string) (string, error) {
 			if action != "test.action" {
 				t.Errorf("Expected action 'test.action', got '%s'", action)
 			}
@@ -110,7 +110,7 @@ func TestServer_HandleAction_ActionNotFound(t *testing.T) {
 
 func TestServer_HandleAction_CommunicationError(t *testing.T) {
 	commClient := &MockCommunicationClient{
-		SendActionFunc: func(ctx context.Context, action string, body string) (string, error) {
+		SendActionFunc: func(ctx context.Context, action, body string) (string, error) {
 			return "", errors.New("communication failed")
 		},
 	}

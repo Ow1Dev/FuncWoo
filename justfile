@@ -11,7 +11,7 @@ run:
     wait
 
 lint:
-  staticcheck ./...
+    golangci-lint run
 
 # Run tests excluding any package matching '/pkgs/api'
 test:

@@ -248,7 +248,6 @@ func TestValidSingleParamHandlers(t *testing.T) {
 
 			// Test with empty payload (should work for most cases)
 			_, err := handler.Invoke(context.Background(), []byte("{}"))
-
 			// We don't expect an error from the handler creation itself
 			// The specific function might return an error, but the handler should be valid
 			if err != nil {
@@ -371,7 +370,6 @@ func (tc *testCloser) Close() error {
 }
 
 func TestCloserInterface(t *testing.T) {
-
 	var tc *testCloser
 	handler := newHandler(func() (io.Reader, error) {
 		tc = &testCloser{Reader: strings.NewReader("test")}
