@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Ow1Dev/NoctiFunc/internal/logger"
 	"github.com/Ow1Dev/NoctiFunc/pkg/communication"
+	"github.com/Ow1Dev/NoctiFunc/pkg/logger"
 	"github.com/Ow1Dev/NoctiFunc/pkg/prism"
 	"github.com/Ow1Dev/NoctiFunc/pkg/utils"
 	"github.com/rs/zerolog"
