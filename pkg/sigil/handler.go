@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-type Handler interface {
+type handler interface {
 	Invoke(ctx context.Context, payload []byte) ([]byte, error)
 }
 
@@ -31,11 +31,7 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
-func NewHandler(handlerFunc any) Handler {
-	return NewHandlerWithOptions(handlerFunc)
-}
-
-func NewHandlerWithOptions(handlerFunc any, options ...Option) Handler {
+func newHandlerWithOptions(handlerFunc any, options ...Option) handler {
 	return newHandler(handlerFunc, options...)
 }
 

@@ -16,7 +16,7 @@ const (
 
 type serviceServer struct {
 	pb.UnimplementedFunctionRunnerServiceServer
-	handler Handler
+	handler handler
 }
 
 func (s *serviceServer) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.InvokeResult, error) {
@@ -36,7 +36,7 @@ func (s *serviceServer) Invoke(ctx context.Context, req *pb.InvokeRequest) (*pb.
 }
 
 // StartGRPCServer launches a gRPC server with the given handler on the specified port.
-func StartGRPCServer(handler Handler, port int) error {
+func StartGRPCServer(handler handler, port int) error {
 	addr := fmt.Sprintf(":%d", port)
 
 	lis, err := net.Listen("tcp", addr)
@@ -57,7 +57,7 @@ func StartGRPCServer(handler Handler, port int) error {
 }
 
 // startRuntimeGRPCLoop is a backward-compatible entry point that uses the default port.
-func startRuntimeGRPCLoop(handler Handler) error {
+func startRuntimeGRPCLoop(handler handler) error {
 	return StartGRPCServer(handler, defaultGRPCPort)
 }
 

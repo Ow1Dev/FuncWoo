@@ -197,7 +197,7 @@ func TestNewHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.fn)
+			handler := newHandler(tt.fn)
 			
 			var payload []byte
 			var err error
@@ -244,7 +244,7 @@ func TestValidSingleParamHandlers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.fn)
+			handler := newHandler(tt.fn)
 			
 			// Test with empty payload (should work for most cases)
 			_, err := handler.Invoke(context.Background(), []byte("{}"))
@@ -276,7 +276,7 @@ func TestInvalidHandlers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.fn)
+			handler := newHandler(tt.fn)
 			_, err := handler.Invoke(context.Background(), nil)
 			if err == nil {
 				t.Error("expected error for invalid handler")
@@ -288,7 +288,7 @@ func TestInvalidHandlers(t *testing.T) {
 func TestWithContext(t *testing.T) {
 	customCtx := context.WithValue(context.Background(), "key", "value")
 	
-	handler := NewHandlerWithOptions(func(ctx context.Context) (TestOutput, error) {
+	handler := newHandlerWithOptions(func(ctx context.Context) (TestOutput, error) {
 		value := ctx.Value("key")
 		if value == nil {
 			return TestOutput{}, errors.New("context value not found")
@@ -313,7 +313,7 @@ func TestWithContext(t *testing.T) {
 }
 
 func TestHandlerReturnsReader(t *testing.T) {
-	handler := NewHandler(func() (io.Reader, error) {
+	handler := newHandler(func() (io.Reader, error) {
 		return strings.NewReader("direct reader response"), nil
 	})
 
@@ -328,7 +328,7 @@ func TestHandlerReturnsReader(t *testing.T) {
 }
 
 func TestJSONUnmarshalError(t *testing.T) {
-	handler := NewHandler(func(input TestInput) error {
+	handler := newHandler(func(input TestInput) error {
 		return nil
 	})
 
@@ -369,7 +369,7 @@ func (tc *testCloser) Close() error {
 func TestCloserInterface(t *testing.T) {
 
 	var tc *testCloser
-	handler := NewHandler(func() (io.Reader, error) {
+	handler := newHandler(func() (io.Reader, error) {
 		tc = &testCloser{Reader: strings.NewReader("test")}
 		return tc, nil
 	})
@@ -409,7 +409,7 @@ func TestZeroValueHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.fn)
+			handler := newHandler(tt.fn)
 			result, err := handler.Invoke(context.Background(), nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -428,7 +428,7 @@ func TestContextPassing(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), key, "test-value")
 
-	handler := NewHandler(func(ctx context.Context, input TestInput) (TestOutput, error) {
+	handler := newHandler(func(ctx context.Context, input TestInput) (TestOutput, error) {
 		value, ok := ctx.Value(key).(string)
 		if !ok {
 			return TestOutput{}, errors.New("context value not found")
