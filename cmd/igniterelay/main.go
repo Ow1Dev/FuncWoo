@@ -17,8 +17,16 @@ import (
 	"github.com/Ow1Dev/NoctiFunc/internal/keyservice"
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
 	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/communication"
+	"github.com/Ow1Dev/NoctiFunc/pkg/utils"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+)
+
+const (
+	Version = "0.1.0"
+	AppName = "igniterelay"
+	Port    = 5001
 )
 
 type serviceServer struct {
@@ -51,9 +59,17 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
-	logger := logger.InitLog(w, *debug)
+	logger := logger.InitLog(logger.Config{
+		Writer:        w,
+		Level:         utils.Ternary(*debug, zerolog.DebugLevel, zerolog.InfoLevel),
+		AppName:       AppName,
+		AppVersion:    Version,
+		EnableCaller:  true,
+		PrettyConsole: true,
+	})
+	defer logger.Close()
 
-	dockerRunner, err := container.NewDockerContainerWithDefaults(logger)
+	dockerRunner, err := container.NewDockerContainerWithDefaults(*logger.GetLogger())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating docker runner: %s\n", err)
 		os.Exit(1)
@@ -62,7 +78,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	grpcFuncExecuter := funcinvoker.NewStandardGRPCClient(10 * time.Second)
 	fileKeyService := keyservice.NewFileSystemKeyService("/var/lib/noctifunc/action")
 
-	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
+	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, *logger.GetLogger())
 
 	s := grpc.NewServer()
 	pb.RegisterCommunicationServiceServer(s, &serviceServer{
@@ -70,7 +86,7 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	})
 
 	go func() {
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 5001))
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", Port))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 		}

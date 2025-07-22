@@ -15,6 +15,14 @@ import (
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
 	"github.com/Ow1Dev/NoctiFunc/pkg/communication"
 	"github.com/Ow1Dev/NoctiFunc/pkg/prism"
+	"github.com/Ow1Dev/NoctiFunc/pkg/utils"
+	"github.com/rs/zerolog"
+)
+
+const (
+	Version = "0.1.0"
+	AppName = "prism"
+	Port    = 5000
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {
@@ -26,22 +34,30 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	debug := flag.Bool("debug", false, "sets log level to debug")
 	flag.Parse()
 
-	logger := logger.InitLog(w, *debug)
+	logger := logger.InitLog(logger.Config{
+		Writer:        w,
+		Level:         utils.Ternary(*debug, zerolog.DebugLevel, zerolog.InfoLevel),
+		AppName:       AppName,
+		AppVersion:    Version,
+		EnableCaller:  true,
+		PrettyConsole: true,
+	})
+	defer logger.Close()
 
 	// Create dependencies
 	fileReader := &prism.OSFileReader{}
 	grpcClient := communication.NewGRPCClient("localhost:5001", time.Second)
 
 	// Create server
-	srv := prism.NewServer(grpcClient, fileReader, "/var/lib/noctifunc/routes", logger)
+	srv := prism.NewServer(grpcClient, fileReader, "/var/lib/noctifunc/routes", *logger.GetLogger())
 
 	httpServer := &http.Server{
-		Addr:    net.JoinHostPort("0.0.0.0", "5000"),
+		Addr:    net.JoinHostPort("0.0.0.0", fmt.Sprintf("%d", Port)),
 		Handler: srv.Handler(),
 	}
 
 	go func() {
-		logger.Info().Msgf("prim server listening on 5000")
+		logger.GetLogger().Info().Msgf("prim server listening on %s", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
 		}
