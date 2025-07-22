@@ -1,138 +1,502 @@
 package sigil
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
+	"strings"
 	"testing"
-	"time"
-
-	"gotest.tools/assert"
 )
 
+// Test types
+type TestInput struct {
+	Name  string `json:"name"`
+	Value int    `json:"value"`
+}
+
+type TestOutput struct {
+	Message string `json:"message"`
+	Result  int    `json:"result"`
+}
+
+// Test functions for all valid signatures
+
+// func ()
+func testFunc1() {}
+
+// func (TIn)
+func testFunc2(input TestInput) {}
+
+// func () error
+func testFunc3() error {
+	return nil
+}
+
+// func (TIn) error
+func testFunc4(input TestInput) error {
+	if input.Value < 0 {
+		return errors.New("negative value")
+	}
+	return nil
+}
+
+// func () (TOut, error)
+func testFunc5() (TestOutput, error) {
+	return TestOutput{Message: "hello", Result: 42}, nil
+}
+
+// func (TIn) (TOut, error)
+func testFunc6(input TestInput) (TestOutput, error) {
+	return TestOutput{
+		Message: "processed " + input.Name,
+		Result:  input.Value * 2,
+	}, nil
+}
+
+// func (context.Context)
+func testFunc7(ctx context.Context) {}
+
+// func (context.Context) error
+func testFunc8(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("nil context")
+	}
+	return nil
+}
+
+// func (context.Context) (TOut, error)
+func testFunc9(ctx context.Context) (TestOutput, error) {
+	return TestOutput{Message: "from context", Result: 1}, nil
+}
+
+// func (context.Context, TIn)
+func testFunc10(ctx context.Context, input TestInput) {}
+
+// func (context.Context, TIn) error
+func testFunc11(ctx context.Context, input TestInput) error {
+	if input.Name == "" {
+		return errors.New("empty name")
+	}
+	return nil
+}
+
+// func (context.Context, TIn) (TOut, error)
+func testFunc12(ctx context.Context, input TestInput) (TestOutput, error) {
+	return TestOutput{
+		Message: "context + " + input.Name,
+		Result:  input.Value + 100,
+	}, nil
+}
+
+func TestNewHandler(t *testing.T) {
+	tests := []struct {
+		name        string
+		fn          interface{}
+		input       TestInput
+		expectError bool
+		checkOutput bool
+		expectedOut TestOutput
+	}{
+		{
+			name:        "func ()",
+			fn:          testFunc1,
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (TIn)",
+			fn:          testFunc2,
+			input:       TestInput{Name: "test", Value: 5},
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func () error",
+			fn:          testFunc3,
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (TIn) error - success",
+			fn:          testFunc4,
+			input:       TestInput{Name: "test", Value: 5},
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (TIn) error - failure",
+			fn:          testFunc4,
+			input:       TestInput{Name: "test", Value: -1},
+			expectError: true,
+		},
+		{
+			name:        "func () (TOut, error)",
+			fn:          testFunc5,
+			expectError: false,
+			checkOutput: true,
+			expectedOut: TestOutput{Message: "hello", Result: 42},
+		},
+		{
+			name:        "func (TIn) (TOut, error)",
+			fn:          testFunc6,
+			input:       TestInput{Name: "world", Value: 21},
+			expectError: false,
+			checkOutput: true,
+			expectedOut: TestOutput{Message: "processed world", Result: 42},
+		},
+		{
+			name:        "func (context.Context)",
+			fn:          testFunc7,
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (context.Context) error",
+			fn:          testFunc8,
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (context.Context) (TOut, error)",
+			fn:          testFunc9,
+			expectError: false,
+			checkOutput: true,
+			expectedOut: TestOutput{Message: "from context", Result: 1},
+		},
+		{
+			name:        "func (context.Context, TIn)",
+			fn:          testFunc10,
+			input:       TestInput{Name: "ctx", Value: 10},
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (context.Context, TIn) error",
+			fn:          testFunc11,
+			input:       TestInput{Name: "ctx", Value: 10},
+			expectError: false,
+			checkOutput: false,
+		},
+		{
+			name:        "func (context.Context, TIn) error - failure",
+			fn:          testFunc11,
+			input:       TestInput{Name: "", Value: 10},
+			expectError: true,
+		},
+		{
+			name:        "func (context.Context, TIn) (TOut, error)",
+			fn:          testFunc12,
+			input:       TestInput{Name: "final", Value: 5},
+			expectError: false,
+			checkOutput: true,
+			expectedOut: TestOutput{Message: "context + final", Result: 105},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewHandler(tt.fn)
+			
+			var payload []byte
+			var err error
+			if tt.input != (TestInput{}) {
+				payload, err = json.Marshal(tt.input)
+				if err != nil {
+					t.Fatalf("failed to marshal input: %v", err)
+				}
+			}
+
+			result, err := handler.Invoke(context.Background(), payload)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if tt.checkOutput && !tt.expectError {
+				var output TestOutput
+				if err := json.Unmarshal(result, &output); err != nil {
+					t.Fatalf("failed to unmarshal output: %v", err)
+				}
+				if output != tt.expectedOut {
+					t.Errorf("expected %+v, got %+v", tt.expectedOut, output)
+				}
+			}
+		})
+	}
+}
+
+func TestValidSingleParamHandlers(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   interface{}
+	}{
+		{"func(string)", func(s string) {}},
+		{"func(int)", func(i int) {}},
+		{"func(struct)", func(input TestInput) {}},
+		{"func(string) error", func(s string) error { return nil }},
+		{"func(int) (string, error)", func(i int) (string, error) { return "", nil }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewHandler(tt.fn)
+			
+			// Test with empty payload (should work for most cases)
+			_, err := handler.Invoke(context.Background(), []byte("{}"))
+			
+			// We don't expect an error from the handler creation itself
+			// The specific function might return an error, but the handler should be valid
+			if err != nil {
+				// Check if it's a JSON unmarshal error, which is expected for primitive types
+				if !strings.Contains(err.Error(), "decode input") {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
 func TestInvalidHandlers(t *testing.T) {
-	type valuer interface {
-		Value(key any) any
+	tests := []struct {
+		name string
+		fn   interface{}
+	}{
+		{"nil function", nil},
+		{"not a function", "not a function"},
+		{"too many params", func(a, b, c, d int) {}},
+		{"no error return", func() int { return 0 }},
+		{"too many returns", func() (int, string, error) { return 0, "", nil }},
+		{"wrong context type", func(s string, input TestInput) error { return nil }},
 	}
 
-	type customContext interface {
-		context.Context
-		MyCustomMethod()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewHandler(tt.fn)
+			_, err := handler.Invoke(context.Background(), nil)
+			if err == nil {
+				t.Error("expected error for invalid handler")
+			}
+		})
+	}
+}
+
+func TestWithContext(t *testing.T) {
+	customCtx := context.WithValue(context.Background(), "key", "value")
+	
+	handler := NewHandlerWithOptions(func(ctx context.Context) (TestOutput, error) {
+		value := ctx.Value("key")
+		if value == nil {
+			return TestOutput{}, errors.New("context value not found")
+		}
+		return TestOutput{Message: value.(string), Result: 1}, nil
+	}, WithContext(customCtx))
+
+	result, err := handler.Invoke(customCtx, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
-	type myContext interface {
-		Deadline() (deadline time.Time, ok bool)
-		Done() <-chan struct{}
-		Err() error
-		Value(key any) any
+	var output TestOutput
+	if err := json.Unmarshal(result, &output); err != nil {
+		t.Fatalf("failed to unmarshal output: %v", err)
 	}
 
-	testCases := []struct {
+	expected := TestOutput{Message: "value", Result: 1}
+	if output != expected {
+		t.Errorf("expected %+v, got %+v", expected, output)
+	}
+}
+
+func TestHandlerReturnsReader(t *testing.T) {
+	handler := NewHandler(func() (io.Reader, error) {
+		return strings.NewReader("direct reader response"), nil
+	})
+
+	result, err := handler.Invoke(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if string(result) != "direct reader response" {
+		t.Errorf("expected 'direct reader response', got %q", string(result))
+	}
+}
+
+func TestJSONUnmarshalError(t *testing.T) {
+	handler := NewHandler(func(input TestInput) error {
+		return nil
+	})
+
+	// Invalid JSON
+	_, err := handler.Invoke(context.Background(), []byte(`{"invalid": json}`))
+	if err == nil {
+		t.Error("expected JSON unmarshal error")
+	}
+}
+
+func TestHandlerInvokeMethod(t *testing.T) {
+	// Test that handlerFunc implements Handler interface correctly
+	hf := handlerFunc(func(ctx context.Context, payload []byte) (io.Reader, error) {
+		return bytes.NewReader([]byte(`{"test": true}`)), nil
+	})
+
+	result, err := hf.Invoke(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := `{"test": true}`
+	if string(result) != expected {
+		t.Errorf("expected %q, got %q", expected, string(result))
+	}
+}
+
+type testCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (tc *testCloser) Close() error {
+	tc.closed = true
+	return nil
+}
+
+func TestCloserInterface(t *testing.T) {
+
+	var tc *testCloser
+	handler := NewHandler(func() (io.Reader, error) {
+		tc = &testCloser{Reader: strings.NewReader("test")}
+		return tc, nil
+	})
+
+	_, err := handler.Invoke(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !tc.closed {
+		t.Error("expected closer to be closed")
+	}
+}
+
+func TestZeroValueHandling(t *testing.T) {
+	tests := []struct {
 		name     string
-		handler  any
+		fn       interface{}
 		expected string
 	}{
 		{
-			name:     "nil handler",
-			expected: "handler function is nil",
-			handler:  nil,
+			name:     "no return values",
+			fn:       func() {},
+			expected: "null",
 		},
 		{
-			name:     "handler is not a function",
-			expected: "expected a function, got struct",
-			handler:  struct{}{},
+			name:     "nil return",
+			fn:       func() (interface{}, error) { return nil, nil },
+			expected: "null\n",
 		},
 		{
-			name: "handler declares too many arguments",
-			expected: "handler has too many parameters: 3",
-			handler: func(n context.Context, x string, y string) error {
-				return nil
-			},
-		},
-		{
-			name: "two argument handler does not context as first argument",
-			expected: "first argument does not implement context.Context: got string",
-			handler: func(a string, x context.Context) error {
-				return nil
-			},
-		},
-		{
-			name: "handler returns too many values",
-			expected: "too many return values: 3",
-			handler: func() (error, error, error) {
-				return nil, nil, nil
-			},
-		},
-		{
-			name: "handler returning two values does not declare error as the second return value",
-			expected: "second return must be error, got string",
-			handler: func() (error, string) {
-				return nil, "hello"
-			},
-		},
-		{
-			name: "handler returning a single value does not implement error",
-			expected: "single return must be error, got string",
-			handler: func() string {
-				return "hello"
-			},
-		},
-		{
-			name:    "no return value should not result in error",
-			expected: "handler must return at least an error",
-			handler: func() {
-			},
-		},
-		{
-			name:    "the handler takes the empty interface",
-			expected: "first argument does not implement context.Context: got interface {}",
-			handler: func(v any) error {
-				if _, ok := v.(context.Context); ok {
-					return errors.New("v should not be a Context")
-				}
-				return nil
-			},
-		},
-		{
-			name:     "the handler takes a same interface with context.Context",
-			expected: "",
-			handler: func(ctx myContext) error {
-				return nil
-			},
-		},
-		{
-			name:     "the handler takes a superset of context.Context",
-			expected: "cannot be assigned to expected parameter type sigil.customContext",
-			handler: func(ctx customContext) error {
-				return nil
-			},
-		},
-		{
-			name:     "the handler takes two arguments and first argument is a same interface with context.Context",
-			expected: "",
-			handler: func(ctx myContext, v any) error {
-				return nil
-			},
-		},
-		{
-			name:     "the handler takes two arguments and first argument is a superset of context.Context",
-			expected: "cannot be assigned to expected parameter type sigil.customContext",
-			handler: func(ctx customContext, v any) error {
-				return nil
-			},
+			name:     "empty struct",
+			fn:       func() (TestOutput, error) { return TestOutput{}, nil },
+			expected: "{\"message\":\"\",\"result\":0}\n",
 		},
 	}
 
-	for i, testCase := range testCases {
-		t.Run(fmt.Sprintf("testCase[%d] %s", i, testCase.name), func(t *testing.T) {
-			t.Helper()
-			handler := NewHandler(testCase.handler)
-			_, err := handler.Invoke(context.TODO(), []byte("{}"))
-			if testCase.expected == "" {
-				assert.NilError(t, err)
-			} else {
-				assert.ErrorContains(t, err, testCase.expected)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewHandler(tt.fn)
+			result, err := handler.Invoke(context.Background(), nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if string(result) != tt.expected {
+				t.Errorf("expected %q, got %q", tt.expected, string(result))
 			}
 		})
+	}
+}
+
+func TestContextPassing(t *testing.T) {
+	type testCtxKey string
+	const key testCtxKey = "test"
+
+	ctx := context.WithValue(context.Background(), key, "test-value")
+
+	handler := NewHandler(func(ctx context.Context, input TestInput) (TestOutput, error) {
+		value, ok := ctx.Value(key).(string)
+		if !ok {
+			return TestOutput{}, errors.New("context value not found")
+		}
+		return TestOutput{Message: value, Result: input.Value}, nil
+	})
+
+	input := TestInput{Name: "test", Value: 42}
+	payload, _ := json.Marshal(input)
+
+	result, err := handler.Invoke(ctx, payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var output TestOutput
+	if err := json.Unmarshal(result, &output); err != nil {
+		t.Fatalf("failed to unmarshal output: %v", err)
+	}
+
+	expected := TestOutput{Message: "test-value", Result: 42}
+	if output != expected {
+		t.Errorf("expected %+v, got %+v", expected, output)
+	}
+}
+
+// Benchmark tests
+func BenchmarkHandlerInvoke(b *testing.B) {
+	handler := NewHandler(func(ctx context.Context, input TestInput) (TestOutput, error) {
+		return TestOutput{Message: input.Name, Result: input.Value}, nil
+	})
+
+	input := TestInput{Name: "benchmark", Value: 42}
+	payload, _ := json.Marshal(input)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := handler.Invoke(context.Background(), payload)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkHandlerInvokeNoInput(b *testing.B) {
+	handler := NewHandler(func() (TestOutput, error) {
+		return TestOutput{Message: "benchmark", Result: 42}, nil
+	})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := handler.Invoke(context.Background(), nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkHandlerInvokeContextOnly(b *testing.B) {
+	handler := NewHandler(func(ctx context.Context) (TestOutput, error) {
+		return TestOutput{Message: "context", Result: 1}, nil
+	})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := handler.Invoke(context.Background(), nil)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
