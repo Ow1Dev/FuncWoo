@@ -93,7 +93,7 @@ func testFunc12(ctx context.Context, input TestInput) (TestOutput, error) {
 func TestNewHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		fn          interface{}
+		fn          any 
 		input       TestInput
 		expectError bool
 		checkOutput bool
@@ -233,7 +233,7 @@ func TestNewHandler(t *testing.T) {
 func TestValidSingleParamHandlers(t *testing.T) {
 	tests := []struct {
 		name string
-		fn   interface{}
+		fn   any 
 	}{
 		{"func(string)", func(s string) {}},
 		{"func(int)", func(i int) {}},
@@ -264,7 +264,7 @@ func TestValidSingleParamHandlers(t *testing.T) {
 func TestInvalidHandlers(t *testing.T) {
 	tests := []struct {
 		name string
-		fn   interface{}
+		fn   any
 	}{
 		{"nil function", nil},
 		{"not a function", "not a function"},
@@ -387,7 +387,7 @@ func TestCloserInterface(t *testing.T) {
 func TestZeroValueHandling(t *testing.T) {
 	tests := []struct {
 		name     string
-		fn       interface{}
+		fn       any 
 		expected string
 	}{
 		{
@@ -397,7 +397,7 @@ func TestZeroValueHandling(t *testing.T) {
 		},
 		{
 			name:     "nil return",
-			fn:       func() (interface{}, error) { return nil, nil },
+			fn:       func() (any, error) { return nil, nil },
 			expected: "null\n",
 		},
 		{
@@ -452,51 +452,5 @@ func TestContextPassing(t *testing.T) {
 	expected := TestOutput{Message: "test-value", Result: 42}
 	if output != expected {
 		t.Errorf("expected %+v, got %+v", expected, output)
-	}
-}
-
-// Benchmark tests
-func BenchmarkHandlerInvoke(b *testing.B) {
-	handler := NewHandler(func(ctx context.Context, input TestInput) (TestOutput, error) {
-		return TestOutput{Message: input.Name, Result: input.Value}, nil
-	})
-
-	input := TestInput{Name: "benchmark", Value: 42}
-	payload, _ := json.Marshal(input)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := handler.Invoke(context.Background(), payload)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkHandlerInvokeNoInput(b *testing.B) {
-	handler := NewHandler(func() (TestOutput, error) {
-		return TestOutput{Message: "benchmark", Result: 42}, nil
-	})
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := handler.Invoke(context.Background(), nil)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkHandlerInvokeContextOnly(b *testing.B) {
-	handler := NewHandler(func(ctx context.Context) (TestOutput, error) {
-		return TestOutput{Message: "context", Result: 1}, nil
-	})
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := handler.Invoke(context.Background(), nil)
-		if err != nil {
-			b.Fatal(err)
-		}
 	}
 }

@@ -143,7 +143,7 @@ type jsonOutBuffer struct {
 }
 
 var bufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &jsonOutBuffer{Buffer: new(bytes.Buffer)}
 	},
 }
@@ -229,7 +229,7 @@ func wrapHandler(fn any) handlerFunc {
 		}
 
 		// Handle response value
-		var resp interface{}
+		var resp any 
 		if len(results) == 2 {
 			// (TOut, error) case
 			resp = results[0].Interface()
