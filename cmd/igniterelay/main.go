@@ -38,7 +38,7 @@ func (s *serviceServer) Execute(ctx context.Context, r *pb.ExecuteRequest) (*pb.
 
 	return &pb.ExecuteResponse{
 		Status: "success",
-		Resp: rsp,
+		Resp:   rsp,
 	}, nil
 }
 
@@ -61,7 +61,6 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 
 	grpcFuncExecuter := funcinvoker.NewStandardGRPCClient(10 * time.Second)
 	fileKeyService := keyservice.NewFileSystemKeyService("/var/lib/noctifunc/action")
-
 
 	executer := executer.NewExecuter(dockerRunner, fileKeyService, grpcFuncExecuter, logger)
 

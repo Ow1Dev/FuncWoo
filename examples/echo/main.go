@@ -16,9 +16,9 @@ type Response struct {
 
 func HandleRequest(ctx context.Context, r Request) (Response, error) {
 	return Response{
-	 	Message: "Hello, " + r.Name + "!",
+		Message: "Hello, " + r.Name + "!",
 	}, nil
-} 
+}
 
 func main() {
 	sigil.Start(HandleRequest)

@@ -6,7 +6,7 @@ import (
 
 func HandleRequest() (string, error) {
 	return "Hello world", nil
-} 
+}
 
 func main() {
 	sigil.Start(HandleRequest)

@@ -154,7 +154,7 @@ func TestServer_LoadRouteConfig_Success(t *testing.T) {
 		ReadFileFunc: func(filename string) ([]byte, error) {
 			return []byte(`method: POST
 action: test.action`), nil
-		},	
+		},
 	}
 	server := NewServer(nil, fileReader, "/test/routes", zerolog.Nop())
 

@@ -31,10 +31,10 @@ func run(ctx context.Context, w io.Writer, args []string) error {
 	// Create dependencies
 	fileReader := &prism.OSFileReader{}
 	grpcClient := communication.NewGRPCClient("localhost:5001", time.Second)
-	
+
 	// Create server
 	srv := prism.NewServer(grpcClient, fileReader, "/var/lib/noctifunc/routes", logger)
-	
+
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort("0.0.0.0", "5000"),
 		Handler: srv.Handler(),

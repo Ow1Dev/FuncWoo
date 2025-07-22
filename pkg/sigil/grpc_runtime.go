@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultGRPCPort        = 8080
+	defaultGRPCPort = 8080
 )
 
 type serviceServer struct {
@@ -60,4 +60,3 @@ func StartGRPCServer(handler handler, port int) error {
 func startRuntimeGRPCLoop(handler handler) error {
 	return StartGRPCServer(handler, defaultGRPCPort)
 }
-

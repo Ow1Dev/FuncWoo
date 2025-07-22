@@ -11,4 +11,3 @@ func (m MockPortAllocator) GetRandomPort() (int, error) {
 	// Create a mock listener that returns a fixed port
 	return 8080, nil
 }
-

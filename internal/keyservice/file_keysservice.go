@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
-type FileSystemKeyService struct{
+type FileSystemKeyService struct {
 	filepath string
 }
+
 func NewFileSystemKeyService(filepath string) *FileSystemKeyService {
 	return &FileSystemKeyService{
 		filepath: filepath,

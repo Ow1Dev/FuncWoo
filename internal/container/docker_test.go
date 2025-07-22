@@ -21,7 +21,7 @@ import (
 type MockDockerClient struct {
 	containerInspectFunc func(ctx context.Context, containerID string) (container.InspectResponse, error)
 	containerStartFunc   func(ctx context.Context, containerID string, options container.StartOptions) error
-	containerCreateFunc  func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+	containerCreateFunc  func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
 }
 
@@ -39,7 +39,7 @@ func (m *MockDockerClient) ContainerStart(ctx context.Context, containerID strin
 	return nil
 }
 
-func (m *MockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+func (m *MockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 	if m.containerCreateFunc != nil {
 		return m.containerCreateFunc(ctx, config, hostConfig, networkingConfig, platform, containerName)
@@ -48,8 +48,8 @@ func (m *MockDockerClient) ContainerCreate(ctx context.Context, config *containe
 }
 
 type MockTimeProvider struct {
-	sleepFunc func(duration time.Duration)
-	nowFunc   func() time.Time
+	sleepFunc   func(duration time.Duration)
+	nowFunc     func() time.Time
 	currentTime time.Time
 }
 
@@ -155,7 +155,7 @@ func TestDockerContainer_getPort_NoMapping(t *testing.T) {
 func TestDockerContainer_start_Success(t *testing.T) {
 	startCalled := false
 	inspectCallCount := 0
-	
+
 	mockClient := &MockDockerClient{
 		containerInspectFunc: func(ctx context.Context, containerID string) (container.InspectResponse, error) {
 			inspectCallCount++
@@ -185,7 +185,7 @@ func TestDockerContainer_start_Success(t *testing.T) {
 			startCalled = true
 			return nil
 		},
-		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
@@ -230,7 +230,7 @@ func TestDockerContainer_start_StartError(t *testing.T) {
 		containerStartFunc: func(ctx context.Context, containerID string, options container.StartOptions) error {
 			return errors.New("start failed")
 		},
-		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{ID: "new-container-id"}, nil
 		},
@@ -336,12 +336,12 @@ func TestDockerContainer_waitForContainer_Timeout(t *testing.T) {
 
 func TestDockerContainer_create_Success(t *testing.T) {
 	createCalled := false
-	
+
 	mockClient := &MockDockerClient{
-		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			createCalled = true
-			
+
 			// Verify configuration
 			if config.Image != "noctifunc/base" {
 				t.Errorf("Expected image 'noctifunc/base', got '%s'", config.Image)
@@ -349,7 +349,7 @@ func TestDockerContainer_create_Success(t *testing.T) {
 			if containerName != "test-key" {
 				t.Errorf("Expected container name 'test-key', got '%s'", containerName)
 			}
-			
+
 			return container.CreateResponse{ID: "created-container-id"}, nil
 		},
 	}
@@ -383,7 +383,7 @@ func TestDockerContainer_create_Success(t *testing.T) {
 
 func TestDockerContainer_create_Error(t *testing.T) {
 	mockClient := &MockDockerClient{
-		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+		containerCreateFunc: func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 			networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 			return container.CreateResponse{}, errors.New("create failed")
 		},
@@ -415,7 +415,7 @@ func TestDockerContainer_create_Error(t *testing.T) {
 
 func TestDefaultDockerConfig(t *testing.T) {
 	config := DefaultDockerConfig()
-	
+
 	if config.Image != "noctifunc/base" {
 		t.Errorf("Expected image 'noctifunc/base', got '%s'", config.Image)
 	}

@@ -27,6 +27,7 @@
             buildInputs = with pkgs; [
               go_1_24
               go-tools
+              gotools
               just
               protobuf
               protoc-gen-go

@@ -10,8 +10,8 @@ import (
 
 type MockContainer struct {
 	IsRunningFunc func(key string, ctx context.Context) bool
-	StartFunc func(key string, ctx context.Context) error
-	GetPortFunc func(key string, ctx context.Context) int
+	StartFunc     func(key string, ctx context.Context) error
+	GetPortFunc   func(key string, ctx context.Context) int
 }
 
 func (m *MockContainer) IsRunning(key string, ctx context.Context) bool {
@@ -26,7 +26,7 @@ func (m *MockContainer) Start(key string, ctx context.Context) error {
 		return m.StartFunc(key, ctx)
 	}
 	return nil
-} 
+}
 
 func (m *MockContainer) GetPort(key string, ctx context.Context) int {
 	if m.GetPortFunc != nil {
@@ -251,5 +251,3 @@ func TestExecuter_Execute_GRPCFuncExecuter(t *testing.T) {
 		t.Errorf("Expected gRPC client error, got %v", err)
 	}
 }
-
-

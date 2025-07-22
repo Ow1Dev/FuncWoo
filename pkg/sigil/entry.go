@@ -4,7 +4,6 @@ import "log"
 
 // Start initializes the Sigil runtime and starts processing requests using the provided handler.
 //
-//
 // Valid function signatures:
 //
 //	func ()

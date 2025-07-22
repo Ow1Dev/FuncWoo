@@ -85,7 +85,7 @@ func handlerTakesContext(t reflect.Type) (bool, error) {
 	if t.NumIn() == 0 {
 		return false, nil
 	}
-	
+
 	if t.NumIn() > 2 {
 		return false, fmt.Errorf("handler has too many parameters: %d", t.NumIn())
 	}
@@ -93,25 +93,25 @@ func handlerTakesContext(t reflect.Type) (bool, error) {
 	// Check first parameter
 	arg := t.In(0)
 	ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
-	
+
 	if arg.Implements(ctxType) {
 		// First parameter is context.Context
 		return true, nil
 	}
-	
+
 	// If first parameter is not context.Context, it must be the input type
 	// and we can only have 1 parameter total
 	if t.NumIn() > 1 {
 		return false, fmt.Errorf("when first argument is not context.Context, handler can only have 1 parameter: got %d parameters, first is %v", t.NumIn(), arg)
 	}
-	
+
 	// Single parameter that is not context.Context - this is valid (input type)
 	return false, nil
 }
 
 func validateReturnTypes(t reflect.Type) error {
 	errType := reflect.TypeOf((*error)(nil)).Elem()
-	
+
 	switch t.NumOut() {
 	case 0:
 		// func() or func(TIn) - allowed
@@ -225,7 +225,7 @@ func wrapHandler(fn any) handlerFunc {
 		}
 
 		// Handle response value
-		var resp any 
+		var resp any
 		if len(results) == 2 {
 			// (TOut, error) case
 			resp = results[0].Interface()

@@ -12,8 +12,8 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/rs/zerolog"
 
-	dockernet "github.com/docker/docker/api/types/network"
 	cerrdefs "github.com/containerd/errdefs"
+	dockernet "github.com/docker/docker/api/types/network"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/Ow1Dev/NoctiFunc/pkg/network"
@@ -22,24 +22,24 @@ import (
 type DockerClientInterface interface {
 	ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error)
 	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
-	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
-	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
+		networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
 }
 
 type DockerContainer struct {
-	cli DockerClientInterface
-	portAllocator network.PortAllocator 
-	network network.NetTransport 
-	timeProvider TimeProvider
-	config DockerConfig 
-	logger zerolog.Logger
+	cli           DockerClientInterface
+	portAllocator network.PortAllocator
+	network       network.NetTransport
+	timeProvider  TimeProvider
+	config        DockerConfig
+	logger        zerolog.Logger
 }
 
 type DockerConfig struct {
-	Image                string
-	InternalPort         string
-	MountSourcePrefix    string
-	MountTarget          string
+	Image                 string
+	InternalPort          string
+	MountSourcePrefix     string
+	MountTarget           string
 	ContainerReadyTimeout time.Duration
 	ConnectionTimeout     time.Duration
 	RetryInterval         time.Duration
@@ -47,10 +47,10 @@ type DockerConfig struct {
 
 func DefaultDockerConfig() DockerConfig {
 	return DockerConfig{
-		Image:                "noctifunc/base",
-		InternalPort:         "8080/tcp",
-		MountSourcePrefix:    "/var/lib/noctifunc/funcs/",
-		MountTarget:          "/func/",
+		Image:                 "noctifunc/base",
+		InternalPort:          "8080/tcp",
+		MountSourcePrefix:     "/var/lib/noctifunc/funcs/",
+		MountTarget:           "/func/",
 		ContainerReadyTimeout: 30 * time.Second,
 		ConnectionTimeout:     time.Second,
 		RetryInterval:         time.Second,
@@ -58,19 +58,19 @@ func DefaultDockerConfig() DockerConfig {
 }
 
 func NewDockerContainer(
-	cli DockerClientInterface, 
+	cli DockerClientInterface,
 	portAllocator network.PortAllocator,
-	network network.NetTransport, 
+	network network.NetTransport,
 	timeProvider TimeProvider,
 	config DockerConfig,
-  logger zerolog.Logger) *DockerContainer {
+	logger zerolog.Logger) *DockerContainer {
 	return &DockerContainer{
-		cli:          cli,
-		config:       config,
-		logger:       logger.With().Str("component", "docker_container").Logger(),
-		network:      network,
+		cli:           cli,
+		config:        config,
+		logger:        logger.With().Str("component", "docker_container").Logger(),
+		network:       network,
 		portAllocator: portAllocator,
-		timeProvider: timeProvider,
+		timeProvider:  timeProvider,
 	}
 }
 
@@ -102,7 +102,7 @@ func (d *DockerClientAdapter) ContainerStart(ctx context.Context, containerID st
 	return d.cli.ContainerStart(ctx, containerID, options)
 }
 
-func (d *DockerClientAdapter) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, 
+func (d *DockerClientAdapter) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 	networkingConfig *dockernet.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
 	return d.cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, platform, containerName)
 }
@@ -115,17 +115,17 @@ func (d *DockerContainer) WaitForContainer(key string, ctx context.Context) erro
 	d.logger.Info().Msgf("Waiting for container to be ready: %s", key)
 
 	timeout := d.timeProvider.Now().Add(d.config.ContainerReadyTimeout)
-	
+
 	// Wait for container to be in running state
 	for d.timeProvider.Now().Before(timeout) {
 		containerJSON, err := d.cli.ContainerInspect(ctx, key)
 		if err != nil {
 			return fmt.Errorf("failed to inspect container: %w", err)
 		}
-		
+
 		if containerJSON.State.Running {
 			d.logger.Info().Msgf("Container %s is running", key)
-			
+
 			// Additional check: try to connect to the port
 			port := d.GetPort(key, ctx)
 			if port > 0 {
@@ -137,16 +137,16 @@ func (d *DockerContainer) WaitForContainer(key string, ctx context.Context) erro
 				}
 			}
 		}
-		
+
 		d.timeProvider.Sleep(d.config.RetryInterval)
 	}
-	
+
 	return fmt.Errorf("container %s did not become ready within timeout", key)
 }
 
-func (d *DockerContainer) GetPort (key string, ctx context.Context) int {
+func (d *DockerContainer) GetPort(key string, ctx context.Context) int {
 	d.logger.Info().Msgf("Getting port for Docker container with key: %s", key)
-	
+
 	containerJSON, err := d.cli.ContainerInspect(ctx, key)
 	if err != nil {
 		d.logger.Error().Err(err).Msgf("Failed to inspect container: %s", key)
@@ -164,7 +164,7 @@ func (d *DockerContainer) GetPort (key string, ctx context.Context) int {
 			}
 		}
 	}
-	
+
 	d.logger.Warn().Msgf("No port mapping found for container: %s", key)
 	return 0
 }
@@ -182,7 +182,7 @@ func (d *DockerContainer) IsRunning(key string, ctx context.Context) bool {
 func (d *DockerContainer) Start(key string, ctx context.Context) error {
 	containerId, err := d.getOrCreateContainer(key, ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get or create container") 
+		return fmt.Errorf("failed to get or create container")
 	}
 
 	d.logger.Info().Msgf("Starting Docker container with ID: %s for key: %s", containerId, key)
@@ -190,7 +190,7 @@ func (d *DockerContainer) Start(key string, ctx context.Context) error {
 		d.logger.Error().Err(err).Msgf("Failed to start container %s", containerId)
 		return fmt.Errorf("failed to start container: %w", err)
 	}
-	
+
 	d.logger.Info().Msgf("Docker container started successfully for key: %s", key)
 
 	// Wait for the container to be ready
@@ -201,14 +201,13 @@ func (d *DockerContainer) Start(key string, ctx context.Context) error {
 	return nil
 }
 
-
 func (d *DockerContainer) getIdByKey(key string, ctx context.Context) (string, error) {
 	d.logger.Info().Msgf("Getting Docker container ID for key: %s", key)
 	containerJSON, err := d.cli.ContainerInspect(ctx, key)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			d.logger.Debug().Msgf("Container %s not found", key)
-			return "", err 
+			return "", err
 		}
 		d.logger.Error().Err(err).Msgf("Failed to inspect container: %s", key)
 		return "", fmt.Errorf("failed to inspect container: %w", err)
@@ -227,7 +226,7 @@ func (d *DockerContainer) getOrCreateContainer(key string, ctx context.Context) 
 		}
 		return "", err
 	}
-	
+
 	return containerID, nil
 }
 
@@ -266,12 +265,12 @@ func (d *DockerContainer) create(key string, ctx context.Context) (string, error
 			},
 		},
 	}, nil, nil, key)
-	
+
 	if err != nil {
 		d.logger.Error().Err(err).Msgf("Failed to create container for key: %s", key)
 		return "", fmt.Errorf("failed to create container: %w", err)
 	}
-	
+
 	d.logger.Info().Msgf("Docker container created with ID: %s", resp.ID)
 
 	return resp.ID, nil

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestPortAllocator_getRandomPort(t* testing.T) {
+func TestPortAllocator_getRandomPort(t *testing.T) {
 	networkMock := &MockNetwork{
 		ListenFunc: func(network, address string) (net.Listener, error) {
 			return &MockListener{Port: 12345}, nil
@@ -26,7 +26,7 @@ func TestPortAllocator_getRandomPort(t* testing.T) {
 	}
 }
 
-func TestPortAllocator_getRandomPort_error(t* testing.T) {
+func TestPortAllocator_getRandomPort_error(t *testing.T) {
 	networkMock := &MockNetwork{
 		ListenFunc: func(network, address string) (net.Listener, error) {
 			return nil, errors.New("network error")

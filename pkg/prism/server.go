@@ -50,7 +50,7 @@ func NewServer(commClient CommunicationClient, fileReader FileReader, routesPath
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.handleAction) 
+	mux.HandleFunc("/", s.handleAction)
 	return mux
 }
 
@@ -96,8 +96,8 @@ func (s *Server) processAction(ctx context.Context, action string, body string, 
 
 	if cfg.Method != method {
 		return "", &HTTPError{
-			Code: http.StatusMethodNotAllowed,
-			Message:    "Method not allowed for action " + action,
+			Code:    http.StatusMethodNotAllowed,
+			Message: "Method not allowed for action " + action,
 		}
 	}
 
@@ -105,9 +105,9 @@ func (s *Server) processAction(ctx context.Context, action string, body string, 
 
 	resutl, err := s.commClient.SendAction(ctx, action, body)
 	if err != nil {
-		return "" , &HTTPError{
-			Code: http.StatusInternalServerError,
-			Message:    "Error processing action: " + err.Error(),
+		return "", &HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Error processing action: " + err.Error(),
 		}
 	}
 
@@ -120,31 +120,31 @@ func (s *Server) loadRouteConfig(action string) (*RouteConfig, error) {
 
 	if !s.fileReader.FileExists(filePath) {
 		return nil, &HTTPError{
-			Code: http.StatusNotFound,
-			Message:    "Action " + action + " not found",
+			Code:    http.StatusNotFound,
+			Message: "Action " + action + " not found",
 		}
 	}
 
 	data, err := s.fileReader.ReadFile(filePath)
 	if err != nil {
 		return nil, &HTTPError{
-			Code: http.StatusInternalServerError,
-			Message:    "Error reading action file: " + err.Error(),
+			Code:    http.StatusInternalServerError,
+			Message: "Error reading action file: " + err.Error(),
 		}
 	}
 
 	cfg, err := loadFromYaml(data)
 	if err != nil {
 		return nil, &HTTPError{
-			Code: http.StatusInternalServerError,
-			Message:    "Error parsing action file: " + err.Error(),
+			Code:    http.StatusInternalServerError,
+			Message: "Error parsing action file: " + err.Error(),
 		}
 	}
 
 	if err := cfg.Validate(); err != nil {
 		return nil, &HTTPError{
-			Code: http.StatusInternalServerError,
-			Message:    "Error validating action config: " + err.Error(),
+			Code:    http.StatusInternalServerError,
+			Message: "Error validating action config: " + err.Error(),
 		}
 	}
 

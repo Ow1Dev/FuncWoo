@@ -93,7 +93,7 @@ func testFunc12(ctx context.Context, input TestInput) (TestOutput, error) {
 func TestNewHandler(t *testing.T) {
 	tests := []struct {
 		name        string
-		fn          any 
+		fn          any
 		input       TestInput
 		expectError bool
 		checkOutput bool
@@ -198,7 +198,7 @@ func TestNewHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := newHandler(tt.fn)
-			
+
 			var payload []byte
 			var err error
 			if tt.input != (TestInput{}) {
@@ -233,7 +233,7 @@ func TestNewHandler(t *testing.T) {
 func TestValidSingleParamHandlers(t *testing.T) {
 	tests := []struct {
 		name string
-		fn   any 
+		fn   any
 	}{
 		{"func(string)", func(s string) {}},
 		{"func(int)", func(i int) {}},
@@ -245,10 +245,10 @@ func TestValidSingleParamHandlers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := newHandler(tt.fn)
-			
+
 			// Test with empty payload (should work for most cases)
 			_, err := handler.Invoke(context.Background(), []byte("{}"))
-			
+
 			// We don't expect an error from the handler creation itself
 			// The specific function might return an error, but the handler should be valid
 			if err != nil {
@@ -291,7 +291,7 @@ func TestWithContext(t *testing.T) {
 	const testKey ctxKey = "key"
 
 	customCtx := context.WithValue(context.Background(), testKey, "value")
-	
+
 	handler := newHandlerWithOptions(func(ctx context.Context) (TestOutput, error) {
 		value := ctx.Value(testKey)
 		if value == nil {
@@ -391,7 +391,7 @@ func TestCloserInterface(t *testing.T) {
 func TestZeroValueHandling(t *testing.T) {
 	tests := []struct {
 		name     string
-		fn       any 
+		fn       any
 		expected string
 	}{
 		{
