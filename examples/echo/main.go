@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/Ow1Dev/NoctiFunc/pkgs/sigil"
+	"github.com/Ow1Dev/NoctiFunc/pkg/sigil"
 )
 
 type Request struct {

@@ -16,7 +16,7 @@ import (
 	cerrdefs "github.com/containerd/errdefs"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/Ow1Dev/NoctiFunc/pkgs/network"
+	"github.com/Ow1Dev/NoctiFunc/pkg/network"
 )
 
 type DockerClientInterface interface {

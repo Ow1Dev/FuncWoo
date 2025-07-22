@@ -7,7 +7,7 @@ log() {
 
 log "Starting protobuf generation..."
 
-API_DIR="pkgs/api"
+API_DIR="pkg/api"
 
 log "Cleaning up existing generated files in ${API_DIR}..."
 rm -rfv "${API_DIR}"

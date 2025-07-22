@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
-	"github.com/Ow1Dev/NoctiFunc/pkgs/communication"
-	"github.com/Ow1Dev/NoctiFunc/pkgs/prism"
+	"github.com/Ow1Dev/NoctiFunc/pkg/communication"
+	"github.com/Ow1Dev/NoctiFunc/pkg/prism"
 )
 
 func run(ctx context.Context, w io.Writer, args []string) error {

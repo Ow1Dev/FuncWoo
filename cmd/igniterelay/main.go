@@ -16,7 +16,7 @@ import (
 	"github.com/Ow1Dev/NoctiFunc/internal/funcinvoker"
 	"github.com/Ow1Dev/NoctiFunc/internal/keyservice"
 	"github.com/Ow1Dev/NoctiFunc/internal/logger"
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
+	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/communication"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )

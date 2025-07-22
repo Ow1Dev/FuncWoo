@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/communication"
+	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/communication"
 )
 
 type GRPCClient struct {

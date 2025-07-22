@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/server"
+	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/server"
 	"google.golang.org/grpc"
 )
 

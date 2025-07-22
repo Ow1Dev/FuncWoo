@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/Ow1Dev/NoctiFunc/pkgs/api/server"
+	pb "github.com/Ow1Dev/NoctiFunc/pkg/api/server"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

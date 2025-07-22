@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Ow1Dev/NoctiFunc/pkgs/sigil"
+	"github.com/Ow1Dev/NoctiFunc/pkg/sigil"
 )
 
 func HandleRequest() (string, error) {

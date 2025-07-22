@@ -15,7 +15,7 @@ import (
 	cerrdefs "github.com/containerd/errdefs"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	netpkg "github.com/Ow1Dev/NoctiFunc/pkgs/network"
+	netpkg "github.com/Ow1Dev/NoctiFunc/pkg/network"
 )
 
 type MockDockerClient struct {
