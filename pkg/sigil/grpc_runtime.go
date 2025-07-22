@@ -12,7 +12,6 @@ import (
 
 const (
 	defaultGRPCPort        = 8080
-	contentTypeJSON        = "application/json"
 )
 
 type serviceServer struct {
